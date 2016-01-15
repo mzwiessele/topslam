@@ -32,6 +32,7 @@ from manifold import distances
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist
+from Bio.Phylo.PhyloXML import Point
 
 class ManifoldCorrection(object):
     def __init__(self, gplvm, distance=distances.mean_embedding_dist):
@@ -92,8 +93,8 @@ class ManifoldCorrection(object):
         to include the pseudo stretch of the Wishart embedding of the manifold.
         """
         if getattr(self, '_corrected_distances', None) is None:
-            self._corrected_distances = dijkstra(self.minimal_spanning_tree, directed=False)
-        return self._corrected_distances
+            self._corrected_distances = dijkstra(self.minimal_spanning_tree, directed=False, return_predecessors=True)
+        return self._corrected_distances[0]
 
     @property
     def manifold_corrected_structure(self):
@@ -139,3 +140,12 @@ class ManifoldCorrection(object):
         directly into the scipy function :py:func:`scipy.cluster.hierarchy.dendrogram`
         """
         return dendrogram(linkage, **kwargs)
+
+    def pseudo_time(self, start):
+        """
+        Returns the pseudo times along the manifold for the given starting point
+        start to all other points (including start).
+
+        :param int start: The index of the starting point in self.X
+        """
+        return self.manifold_corrected_distances[start]
