@@ -34,9 +34,8 @@
 
 from __future__ import print_function
 import os
-import sys
-from setuptools import setup, Extension
-import numpy as np
+from setuptools import setup
+import codecs
 
 def read(fname):
     with codecs.open(fname, 'r', 'latin') as f:
