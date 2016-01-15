@@ -69,8 +69,8 @@ setup(name = 'manifold',
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "https://github.com/mzwiessele/applygpy",
-      packages = ["applygpy",
-                  "applygpy.tests"
+      packages = ["manifold",
+                  "manifold.tests"
                   ],
       package_dir={'manifold': 'manifold'},
       py_modules = ['manifold.__init__'],
