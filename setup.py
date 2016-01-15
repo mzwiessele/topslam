@@ -56,7 +56,7 @@ def read_to_rst(fname):
 desc = read_to_rst('README.md')
 
 version_dummy = {}
-exec(read('paramz/__version__.py'), version_dummy)
+exec(read('manifold/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
 del version_dummy
 
@@ -68,7 +68,7 @@ setup(name = 'manifold',
       long_description=desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
-      url = "https://github.com/mzwiessele/applygpy",
+      url = "https://github.com/mzwiessele/manifold",
       packages = ["manifold",
                   "manifold.tests"
                   ],
