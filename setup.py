@@ -38,12 +38,35 @@ import sys
 from setuptools import setup, Extension
 import numpy as np
 
+def read(fname):
+    with codecs.open(fname, 'r', 'latin') as f:
+        return f.read()
+
+def read_to_rst(fname):
+    try:
+        import pypandoc
+        rstname = "{}.{}".format(os.path.splitext(fname)[0], 'rst')
+        pypandoc.convert(read(fname), 'rst', format='md', outputfile=rstname)
+        with open(rstname, 'r') as f:
+            rststr = f.read()
+        return rststr
+        #return read(rstname)
+    except ImportError:
+        return read(fname)
+
+desc = read_to_rst('README.md')
+
+version_dummy = {}
+exec(read('paramz/__version__.py'), version_dummy)
+__version__ = version_dummy['__version__']
+del version_dummy
 
 setup(name = 'manifold',
-      version = '0.1',
+      version = __version__,
       author = "Max Zwiessele",
       author_email = "ibinbei@gmail.com",
       description = ("Manifold metric and correction techniques for (Bayesian) GPLVM"),
+      long_description=desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
       url = "https://github.com/mzwiessele/applygpy",
