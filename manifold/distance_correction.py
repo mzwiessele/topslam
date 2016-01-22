@@ -30,9 +30,10 @@
 
 from manifold import distances
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
+from scipy.sparse import csr_matrix, find
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
-from scipy.spatial.distance import pdist
-from Bio.Phylo.PhyloXML import Point
+from scipy.spatial.distance import pdist, squareform
+import numpy as np
 
 class ManifoldCorrection(object):
     def __init__(self, gplvm, distance=distances.mean_embedding_dist):
@@ -70,7 +71,7 @@ class ManifoldCorrection(object):
     @property
     def _manifold_distance_matrix(self):
         if getattr(self, '_M', None) is None:
-            self._M = self.distance(self.X, self.G)
+            self._M = csr_matrix(self.distance(self.X, self.G))
         return self._M
 
     @property
@@ -105,11 +106,12 @@ class ManifoldCorrection(object):
         one point to another. This can be very helpful in doing structure analysis
         and clustering of the manifold embedded data points.
         """
-        if getattr(self, '_corrected_distances', None) is None:
+        if getattr(self, '_corrected_structure', None) is None:
             self._corrected_structure = dijkstra(self.minimal_spanning_tree, directed=False, unweighted=True)
         return self._corrected_structure
 
 
+    @property
     def manifold_structure_linkage(self):
         """
         Return the UPGMA linkage matrix based on the correlation structure of
@@ -125,7 +127,7 @@ class ManifoldCorrection(object):
         Return the UPGMA linkage matrix for the manifold distances
         """
         if getattr(self, '_Mlinkage', None) is None:
-            self._Mlinkage = average(self.manifold_corrected_distances)
+            self._Mlinkage = average(squareform(self.manifold_corrected_distances))
         return self._Mlinkage
 
     def cluster(self, linkage, num_classes):
@@ -146,6 +148,63 @@ class ManifoldCorrection(object):
         Returns the pseudo times along the manifold for the given starting point
         start to all other points (including start).
 
+        If the starting point is not a leaf, we will select a direction randomly
+        and go backwards in time for one direction and forward for the other.
+
         :param int start: The index of the starting point in self.X
         """
-        return self.manifold_corrected_distances[start]
+        D = self.manifold_corrected_distances
+        preds = self._corrected_distances[1]
+        junc = []
+        left = -9999
+        for _tmp in preds[:,start]:
+            if _tmp != -9999:
+                if _tmp not in junc:
+                    junc.append(_tmp)
+                    #left = junc[0]
+            if len(junc) == 2:
+                if ((preds[:,0]==junc[0]).sum() > (preds[:,0]==junc[1]).sum()):
+                    left = junc[1]
+                else:
+                    left = junc[0]
+                break
+        pseudo_time = D[start]
+        if left != -9999:
+            pseudo_time[preds[:,start]==left] *= -1
+        return pseudo_time
+
+    def manifold_distance_time_tree(self, start):
+        test_graph = csr_matrix(self.minimal_spanning_tree.shape)
+        D = self.manifold_corrected_distances
+        for i,j in zip(*find(self.minimal_spanning_tree)[:2]):
+            test_graph[i,j] = D[start,j]
+            if j == start:
+                test_graph[i,j] = D[i,start]
+        return test_graph
+
+    def longest_path(self, start, report_all=False):
+        """
+        Get the longest path from start ongoing. This usually coincides with the
+        backbone of the tree, starting from the starting point. If the latent
+        structure divides into substructures, this is either of the two (if
+        two paths have the same lengths). If report_all is True, we find all backbones
+        with the same length.
+        """
+        S = self.manifold_corrected_structure
+        preds = self._corrected_distances[1]
+        distances = S[start]
+        maxdist = S[start].max()
+        ends = (S[start]==maxdist).nonzero()[0]
+        paths = []
+        for end in ends:
+            pre = end
+            path = []
+            while pre != start:
+                path.append(pre)
+                pre = preds[start,pre]
+            path.append(start)
+            if not report_all:
+                return path[::-1]
+            else:
+                paths.append(path[::-1])
+        return paths

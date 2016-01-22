@@ -54,7 +54,7 @@ def cholesky_dist(X, G):
     first product cholesky on vector, then take distance
     """
     chols = _multi_chol(G)
-    distM = np.einsum('iq,ipq->ip',X,chols)
+    distM = np.einsum('iq,iqp->ip',X,chols)
     return np.power(_distance(distance_matrix(distM)), 1./2.)
 
 def cholesky_dist_product(X, G):
@@ -65,4 +65,4 @@ def cholesky_dist_product(X, G):
 def mean_embedding_dist(X, G):
     dM = distance_matrix(X)
     mean_geometry = (G[:, None, :, :] + G[None, :, :, :])/2.
-    return np.power(np.einsum('ijp,ijpq,ijq->ij', dM, mean_geometry, dM), 1./2.)
+    return np.sqrt(np.einsum('ijp,ijpq,ijq->ij', dM, mean_geometry, dM))
