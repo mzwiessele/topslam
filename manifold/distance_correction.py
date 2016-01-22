@@ -60,6 +60,7 @@ class ManifoldCorrection(object):
             except AttributeError:
                 # not bayesian GPLVM
                 self._X = self.gplvm.X
+            self._X = self._X * self.gplvm.kern.input_sensitivity()
         return self._X
 
     @property
@@ -127,7 +128,7 @@ class ManifoldCorrection(object):
         Return the UPGMA linkage matrix for the manifold distances
         """
         if getattr(self, '_Mlinkage', None) is None:
-            self._Mlinkage = average(squareform(self.manifold_corrected_distances))
+            self._Mlinkage = average(squareform(self.manifold_corrected_distances, ))
         return self._Mlinkage
 
     def cluster(self, linkage, num_classes):
