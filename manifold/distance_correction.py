@@ -199,7 +199,7 @@ class ManifoldCorrection(object):
 
         :param int start: The index of the starting point in self.X
         """
-        D = self.manifold_corrected_distances
+        D = self.manifold_corrected_distance_matrix
         preds = self._corrected_distances[1]
         junc = []
         left = -9999
@@ -221,7 +221,7 @@ class ManifoldCorrection(object):
 
     def tree_distance_time_tree(self, start):
         test_graph = csr_matrix(self.minimal_spanning_tree.shape)
-        D = self.manifold_corrected_distances
+        D = self.manifold_corrected_distance_matrix
         for i,j in zip(*find(self.minimal_spanning_tree)[:2]):
             test_graph[i,j] = D[start,j]
             if j == start:
