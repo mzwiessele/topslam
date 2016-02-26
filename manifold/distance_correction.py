@@ -164,7 +164,7 @@ class ManifoldCorrection(object):
         the manifold embedding MST
         """
         if getattr(self, '_Slinkage', None) is None:
-            self._Slinkage = average(pdist(self.manifold_corrected_structure, metric='correlation'))
+            self._Slinkage = average(pdist(self.tree_corrected_structure, metric='correlation'))
         return self._Slinkage
 
     @property
@@ -173,7 +173,7 @@ class ManifoldCorrection(object):
         Return the UPGMA linkage matrix for the manifold distances
         """
         if getattr(self, '_Mlinkage', None) is None:
-            self._Mlinkage = average(squareform(self.manifold_corrected_distances, ))
+            self._Mlinkage = average(squareform(self.tree_corrected_distances, ))
         return self._Mlinkage
 
     def cluster(self, linkage, num_classes):
