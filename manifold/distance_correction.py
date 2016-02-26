@@ -98,7 +98,7 @@ class ManifoldCorrection(object):
         ensure a fully connected graph. This only adds edges which are not already there,
         so that the connections are made.
         """
-        D = self.manifold_corrected_distance_matrix
+        D = self.manifold_corrected_distance_matrix.toarray()
         idxs = np.argsort(D)
         r = range(D.shape[0])
         idx = idxs[:, :k]
