@@ -30,7 +30,7 @@
 
 from manifold import distances
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
-from scipy.sparse import csr_matrix, find
+from scipy.sparse import csr_matrix, find, lil_matrix
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist, squareform
 import numpy as np
@@ -60,7 +60,7 @@ class ManifoldCorrection(object):
             except AttributeError:
                 # not bayesian GPLVM
                 self._X = self.gplvm.X
-            self._X = self._X * self.gplvm.kern.input_sensitivity()
+            #self._X = self._X * self.gplvm.kern.input_sensitivity()
         return self._X
 
     @property
@@ -70,7 +70,11 @@ class ManifoldCorrection(object):
         return self._G
 
     @property
-    def _manifold_distance_matrix(self):
+    def manifold_corrected_distance_matrix(self):
+        """
+        Returns the distances between all pairs of inputs, corrected for
+        the manifold embedding.
+        """
         if getattr(self, '_M', None) is None:
             self._M = csr_matrix(self.distance(self.X, self.G))
         return self._M
@@ -83,11 +87,52 @@ class ManifoldCorrection(object):
         You can explore different distance corrections in manifold.distances.
         """
         if getattr(self, '_mst', None) is None:
-            self._mst = minimum_spanning_tree(self._manifold_distance_matrix)
+            self._mst = minimum_spanning_tree(self.manifold_corrected_distance_matrix)
         return self._mst
 
+    def knn_graph(self, k, include_mst=False):
+        """
+        Return a k-nearest-neighbour graph with k neighbours.
+
+        Optionally you can add the minimal spanning tree in, in order to
+        ensure a fully connected graph. This only adds edges which are not already there,
+        so that the connections are made.
+        """
+        D = self.manifold_corrected_distance_matrix
+        idxs = np.argsort(D)
+        r = range(D.shape[0])
+        idx = idxs[:, :k]
+        _distances = lil_matrix(D.shape)
+        for neighbours in idx.T:
+            _distances[r, neighbours] = D[r, neighbours]
+        if include_mst:
+            mst = self.minimal_spanning_tree
+            for i,j,v in find(mst):
+                if _distances[i,j] == 0:
+                    _distances[i,j] = v
+        return _distances
+
+    def knn_corrected_distances(self, knn_graph):
+        """
+        Return all distances along the knn_graph given.
+
+        You can get the knn_graph by calling knn_graph on this object.
+        """
+        return dijkstra(knn_graph, directed=False)
+
+    def knn_corrected_structure(self, knn_graph):
+        """
+        Return the structure distances, where each edge along knn graph has a
+        distance of one, such that the distance just means the number of
+        hops to make in order to get from one point to another.
+
+        This can be very helpful in doing structure analysis
+        and clustering of the manifold embedded data points.
+        """
+        return dijkstra(knn_graph, directed=False, unweighted=True)
+
     @property
-    def manifold_corrected_distances(self):
+    def tree_corrected_distances(self):
         """
         Return the distances summed along the manifold minimal spanning tree.
 
@@ -99,7 +144,7 @@ class ManifoldCorrection(object):
         return self._corrected_distances[0]
 
     @property
-    def manifold_corrected_structure(self):
+    def tree_corrected_structure(self):
         """
         Return the structure distances, where each edge along the manifold
         minimal spanning tree has a distance of one, such that the
@@ -113,7 +158,7 @@ class ManifoldCorrection(object):
 
 
     @property
-    def manifold_structure_linkage(self):
+    def tree_structure_linkage(self):
         """
         Return the UPGMA linkage matrix based on the correlation structure of
         the manifold embedding MST
@@ -123,7 +168,7 @@ class ManifoldCorrection(object):
         return self._Slinkage
 
     @property
-    def manifold_distance_linkage(self):
+    def tree_distance_linkage(self):
         """
         Return the UPGMA linkage matrix for the manifold distances
         """
@@ -174,7 +219,7 @@ class ManifoldCorrection(object):
             pseudo_time[preds[:,start]==left] *= -1
         return pseudo_time
 
-    def manifold_distance_time_tree(self, start):
+    def tree_distance_time_tree(self, start):
         test_graph = csr_matrix(self.minimal_spanning_tree.shape)
         D = self.manifold_corrected_distances
         for i,j in zip(*find(self.minimal_spanning_tree)[:2]):
@@ -183,7 +228,7 @@ class ManifoldCorrection(object):
                 test_graph[i,j] = D[i,start]
         return test_graph
 
-    def longest_path(self, start, report_all=False):
+    def tree_longest_path(self, start, report_all=False):
         """
         Get the longest path from start ongoing. This usually coincides with the
         backbone of the tree, starting from the starting point. If the latent
