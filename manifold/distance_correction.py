@@ -107,20 +107,25 @@ class ManifoldCorrection(object):
             _distances[r, neighbours] = D[r, neighbours]
         if include_mst:
             mst = self.minimal_spanning_tree
-            for i,j,v in find(mst):
+            for i,j,v in zip(*find(mst)):
                 if _distances[i,j] == 0:
                     _distances[i,j] = v
         return _distances
 
-    def knn_corrected_distances(self, knn_graph):
+    def knn_corrected_distances(self, knn_graph, return_predecessors=False):
         """
         Return all distances along the knn_graph given.
 
-        You can get the knn_graph by calling knn_graph on this object.
-        """
-        return dijkstra(knn_graph, directed=False)
+        You can get the knn_graph by calling knn_graph(k) on this object.
 
-    def knn_corrected_structure(self, knn_graph):
+        :param knn_graph: The sparse matrix encoding the knn-graph to compute distances on.
+        :param bool return_predecessors: Whether to return the predecessors of each node in the graph, this is for reconstruction of paths.
+
+        returns (distances, predecessors) if return_predecessors is True.
+        """
+        return dijkstra(knn_graph, directed=False, return_predecessors=return_predecessors)
+
+    def knn_corrected_structure(self, knn_graph, return_predecessors=False):
         """
         Return the structure distances, where each edge along knn graph has a
         distance of one, such that the distance just means the number of
@@ -128,8 +133,13 @@ class ManifoldCorrection(object):
 
         This can be very helpful in doing structure analysis
         and clustering of the manifold embedded data points.
+
+        :param knn_graph: The sparse matrix encoding the knn-graph to compute distances on.
+        :param bool return_predecessors: Whether to return the predecessors of each node in the graph, this is for reconstruction of paths.
+
+        returns (distances, predecessors) if return_predecessors is True.
         """
-        return dijkstra(knn_graph, directed=False, unweighted=True)
+        return dijkstra(knn_graph, directed=False, unweighted=True, return_predecessors=return_predecessors)
 
     @property
     def tree_corrected_distances(self):
@@ -189,10 +199,10 @@ class ManifoldCorrection(object):
         """
         return dendrogram(linkage, **kwargs)
 
-    def pseudo_time(self, start):
+    def tree_pseudo_time(self, start):
         """
-        Returns the pseudo times along the manifold for the given starting point
-        start to all other points (including start).
+        Returns the pseudo times along the tree correction of the manifold
+        for the given starting point `start` to all other points (including `start`).
 
         If the starting point is not a leaf, we will select a direction randomly
         and go backwards in time for one direction and forward for the other.
@@ -220,6 +230,11 @@ class ManifoldCorrection(object):
         return pseudo_time
 
     def tree_distance_time_tree(self, start):
+        """
+        Returns a tree, where all edges are filled with the distance from
+        `start`. This is mostly for plotting purposes, visualizing the
+        time along the tree, starting from `start`.
+        """
         test_graph = csr_matrix(self.minimal_spanning_tree.shape)
         D = self.manifold_corrected_distance_matrix
         for i,j in zip(*find(self.minimal_spanning_tree)[:2]):
@@ -234,7 +249,7 @@ class ManifoldCorrection(object):
         backbone of the tree, starting from the starting point. If the latent
         structure divides into substructures, this is either of the two (if
         two paths have the same lengths). If report_all is True, we find all backbones
-        with the same length.
+        with the same number of edges.
         """
         S = self.manifold_corrected_structure
         preds = self._corrected_distances[1]
