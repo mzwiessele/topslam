@@ -28,11 +28,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from manifold import distances
+from . import distances
+
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.sparse import csr_matrix, find, lil_matrix
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist, squareform
+
 import numpy as np
 
 class ManifoldCorrection(object):
@@ -90,101 +92,73 @@ class ManifoldCorrection(object):
             self._mst = minimum_spanning_tree(self.manifold_corrected_distance_matrix)
         return self._mst
 
-    def knn_graph(self, k, include_mst=False):
+    @property
+    def graph(self):
         """
-        Return a k-nearest-neighbour graph with k neighbours.
-
-        Optionally you can add the minimal spanning tree in, in order to
-        ensure a fully connected graph. This only adds edges which are not already there,
-        so that the connections are made.
+        Return the correction graph to use for this manifold correction object.
         """
-        D = self.manifold_corrected_distance_matrix.toarray()
-        idxs = np.argsort(D)
-        r = range(D.shape[0])
-        idx = idxs[:, :k]
-        _distances = lil_matrix(D.shape)
-        for neighbours in idx.T:
-            _distances[r, neighbours] = D[r, neighbours]
-        if include_mst:
-            mst = self.minimal_spanning_tree
-            for i,j,v in zip(*find(mst)):
-                if _distances[i,j] == 0:
-                    _distances[i,j] = v
-        return _distances
+        raise NotImplemented("Implement the graph extraction property for this class")
 
-    def knn_corrected_distances(self, knn_graph, return_predecessors=False):
+    def _prep_distances(self):
+        self._graph_distances, self._predecessors = dijkstra(self.graph, directed=False, return_predecessors=True)
+
+    @property
+    def distances_along_graph(self):
         """
-        Return all distances along the knn_graph given.
-
-        You can get the knn_graph by calling knn_graph(k) on this object.
+        Return all distances along the graph.
 
         :param knn_graph: The sparse matrix encoding the knn-graph to compute distances on.
         :param bool return_predecessors: Whether to return the predecessors of each node in the graph, this is for reconstruction of paths.
-
-        returns (distances, predecessors) if return_predecessors is True.
         """
-        return dijkstra(knn_graph, directed=False, return_predecessors=return_predecessors)
+        if getattr(self, '_graph_distances', None) is None:
+            self._prep_distances()
+        return self._graph_distances
 
-    def knn_corrected_structure(self, knn_graph, return_predecessors=False):
+    @property
+    def graph_predecessors(self):
         """
-        Return the structure distances, where each edge along knn graph has a
+        Return the predecessors of each node for this graph correction.
+
+        This is used for path reconstruction along this graphs shortest paths.
+        """
+        if getattr(self, '_predecessors', None) is None:
+            self._prep_distances()
+        return self._predecessors
+
+    @property
+    def linkage_along_graph(self):
+        """
+        Return the UPGMA linkage matrix for the distances along the graph.
+        """
+        if getattr(self, '_dist_linkage', None) is None:
+            self._dist_linkage = average(squareform(self.distances_along_graph))
+        return self._dist_linkage
+
+    @property
+    def distances_in_structure(self):
+        """
+        Return the structure distances, where each edge along the graph has a
         distance of one, such that the distance just means the number of
         hops to make in order to get from one point to another.
 
         This can be very helpful in doing structure analysis
         and clustering of the manifold embedded data points.
 
-        :param knn_graph: The sparse matrix encoding the knn-graph to compute distances on.
-        :param bool return_predecessors: Whether to return the predecessors of each node in the graph, this is for reconstruction of paths.
-
-        returns (distances, predecessors) if return_predecessors is True.
+        returns hops, the pairwise number of hops between points along the tree.
         """
-        return dijkstra(knn_graph, directed=False, unweighted=True, return_predecessors=return_predecessors)
+        if getattr(self, '_struct_distances', None) is None:
+            self._struct_distances = dijkstra(self.graph, directed=False, unweighted=True, return_predecessors=False)
+        return self._struct_distances
 
     @property
-    def tree_corrected_distances(self):
-        """
-        Return the distances summed along the manifold minimal spanning tree.
-
-        This reflects the structure and distances along the manifold in order
-        to include the pseudo stretch of the Wishart embedding of the manifold.
-        """
-        if getattr(self, '_corrected_distances', None) is None:
-            self._corrected_distances = dijkstra(self.minimal_spanning_tree, directed=False, return_predecessors=True)
-        return self._corrected_distances[0]
-
-    @property
-    def tree_corrected_structure(self):
-        """
-        Return the structure distances, where each edge along the manifold
-        minimal spanning tree has a distance of one, such that the
-        distance just means the number of hops to make in order to get from
-        one point to another. This can be very helpful in doing structure analysis
-        and clustering of the manifold embedded data points.
-        """
-        if getattr(self, '_corrected_structure', None) is None:
-            self._corrected_structure = dijkstra(self.minimal_spanning_tree, directed=False, unweighted=True)
-        return self._corrected_structure
-
-
-    @property
-    def tree_structure_linkage(self):
+    def linkage_in_structure(self):
         """
         Return the UPGMA linkage matrix based on the correlation structure of
         the manifold embedding MST
         """
-        if getattr(self, '_Slinkage', None) is None:
-            self._Slinkage = average(pdist(self.tree_corrected_structure, metric='correlation'))
-        return self._Slinkage
-
-    @property
-    def tree_distance_linkage(self):
-        """
-        Return the UPGMA linkage matrix for the manifold distances
-        """
-        if getattr(self, '_Mlinkage', None) is None:
-            self._Mlinkage = average(squareform(self.tree_corrected_distances, ))
-        return self._Mlinkage
+        if getattr(self, '_struct_linkage', None) is None:
+            self._struct_linkage = average(pdist(self.distances_in_structure, metric='correlation'))
+        return self._struct_linkage
 
     def cluster(self, linkage, num_classes):
         """
@@ -199,51 +173,21 @@ class ManifoldCorrection(object):
         """
         return dendrogram(linkage, **kwargs)
 
-    def tree_pseudo_time(self, start):
+    def get_time_graph(self, start):
         """
-        Returns the pseudo times along the tree correction of the manifold
-        for the given starting point `start` to all other points (including `start`).
-
-        If the starting point is not a leaf, we will select a direction randomly
-        and go backwards in time for one direction and forward for the other.
-
-        :param int start: The index of the starting point in self.X
-        """
-        D = self.manifold_corrected_distance_matrix
-        preds = self._corrected_distances[1]
-        junc = []
-        left = -9999
-        for _tmp in preds[:,start]:
-            if _tmp != -9999:
-                if _tmp not in junc:
-                    junc.append(_tmp)
-                    #left = junc[0]
-            if len(junc) == 2:
-                if ((preds[:,0]==junc[0]).sum() > (preds[:,0]==junc[1]).sum()):
-                    left = junc[1]
-                else:
-                    left = junc[0]
-                break
-        pseudo_time = D[start]
-        if left != -9999:
-            pseudo_time[preds[:,start]==left] *= -1
-        return pseudo_time
-
-    def tree_distance_time_tree(self, start):
-        """
-        Returns a tree, where all edges are filled with the distance from
+        Returns a graph, where all edges are filled with the distance from
         `start`. This is mostly for plotting purposes, visualizing the
         time along the tree, starting from `start`.
         """
-        test_graph = csr_matrix(self.minimal_spanning_tree.shape)
-        D = self.manifold_corrected_distance_matrix
-        for i,j in zip(*find(self.minimal_spanning_tree)[:2]):
+        test_graph = csr_matrix(self.graph.shape)
+        D = self.distances_along_graph
+        for i,j in zip(*find(self.graph)[:2]):
             test_graph[i,j] = D[start,j]
             if j == start:
                 test_graph[i,j] = D[i,start]
         return test_graph
 
-    def tree_longest_path(self, start, report_all=False):
+    def get_longest_path(self, start, report_all=False):
         """
         Get the longest path from start ongoing. This usually coincides with the
         backbone of the tree, starting from the starting point. If the latent
@@ -251,8 +195,8 @@ class ManifoldCorrection(object):
         two paths have the same lengths). If report_all is True, we find all backbones
         with the same number of edges.
         """
-        S = self.manifold_corrected_structure
-        preds = self._corrected_distances[1]
+        S = self.distances_in_structure
+        preds = self.graph_predecessors
         distances = S[start]
         maxdist = S[start].max()
         ends = (S[start]==maxdist).nonzero()[0]

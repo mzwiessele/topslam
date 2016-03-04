@@ -1,3 +1,4 @@
-from distance_correction import ManifoldCorrection
+from tree_correction import ManifoldCorrectionTree
+from knn_correction import ManifoldCorrectionKNN
 
 import distances
