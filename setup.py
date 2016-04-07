@@ -71,6 +71,7 @@ setup(name = 'manifold',
       url = "https://github.com/mzwiessele/manifold",
       packages = ["manifold",
                   "manifold.tests"
+                  "manifold.simulation"
                   ],
       package_dir={'manifold': 'manifold'},
       py_modules = ['manifold.__init__'],
