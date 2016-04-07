@@ -38,7 +38,7 @@ from scipy.spatial.distance import pdist, squareform
 import numpy as np
 
 class ManifoldCorrection(object):
-    def __init__(self, gplvm, distance=distances.mean_embedding_dist):
+    def __init__(self, gplvm, distance=distances.mean_embedding_dist, dimensions=None):
         """
         Construct a correction class for the BayesianGPLVM given.
 
@@ -49,20 +49,27 @@ class ManifoldCorrection(object):
             an optimized GPLVM or BayesianGPLVM model from GPy
         :param func dist: dist(X,G), the distance to use for pairwise distances
             in X using the manifold embedding G
+        :param array-like dimensions: The dimensions of the latent space to use [default: self.gplvm.get_most_significant_input_dimensions()[:2]]
         """
         self.gplvm = gplvm
         self.distance = distance
+        if dimensions is None:
+            dimensions = self.gplvm.get_most_significant_input_dimensions()[:2]
+        self.dimensions = dimensions
 
     @property
     def X(self):
         if getattr(self, '_X', None) is None:
             try:
-                self._X = self.gplvm.X.mean
-                self._X.mean
+                _X = self.gplvm.X.mean
+                _X.mean
             except AttributeError:
                 # not bayesian GPLVM
-                self._X = self.gplvm.X
-            #self._X = self._X * self.gplvm.kern.input_sensitivity()
+                _X = self.gplvm.X
+            # Make sure we only take the dimensions we want to use:
+            self._X = np.zeros(_X.shape)
+            msi = self.dimensions
+            self._X[:, msi] = _X[:,msi]
         return self._X
 
     @property
