@@ -108,6 +108,7 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
             prev_split_time = None
             for split in np.array_split(split, np.random.binomial(1, split_prob)+1):
                 newlabs.extend(["{} {}".format(_c, i) for _c in labels[split]])
+                i += 1
                 # If we split a collection into two, we want the two times to match up now:
                 if prev_split_time is None:
                     prev_split_time = t[split].ptp()
