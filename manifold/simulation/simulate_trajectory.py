@@ -73,6 +73,9 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
     n_data = t.shape[0]
 
     ulabs = [labels[0]]
+    
+    newlabs = []
+    
     for x in range(n_data):
         if labels[x] != ulabs[-1]:
             ulabs.append(labels[x])
@@ -104,8 +107,7 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
             pre_theta = None
             prev_split_time = None
             for split in np.array_split(split, np.random.binomial(1, split_prob)+1):
-                labels[split] = ["{} {}".format(_c, i) for _c in labels[split]]
-                i += 1
+                newlabs.extend(["{} {}".format(_c, i) for _c in labels[split]])
                 # If we split a collection into two, we want the two times to match up now:
                 if prev_split_time is None:
                     prev_split_time = t[split].ptp()
@@ -151,7 +153,7 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
     Xsim /= Xsim.std(0)
     #Xsim += np.random.normal(0,var,Xsim.shape)
 
-    return Xsim, seed
+    return Xsim, seed, newlabs
 
 def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     n_data = Xsim.shape[0]
@@ -179,7 +181,7 @@ def guo_simulation(p_dims=48, n_divisions=6, seed=None):
     c = np.log2(labels) / n_divisions
     #c = t
     xvar = .6
-    Xsim, seed = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+    Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
     def simulate_new():
         return simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.7)
     return Xsim, simulate_new, t, c, labels, seed
