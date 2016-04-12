@@ -32,5 +32,5 @@ import matplotlib
 matplotlib.use('agg')
 
 import nose
-nose.main('manifold', defaultTest='manifold/tests')
+nose.main('cellSLAM', defaultTest='cellSLAM/tests')
 

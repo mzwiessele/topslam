@@ -5,7 +5,7 @@ Created on 30 Sep 2015
 '''
 import unittest, numpy as np, GPy  # @UnresolvedImport
 from io import BytesIO
-from manifold import distance_correction
+from cellSLAM import distance_correction
 
 class Test(unittest.TestCase):
     pass

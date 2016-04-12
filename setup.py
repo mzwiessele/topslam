@@ -53,30 +53,30 @@ def read_to_rst(fname):
     except ImportError:
         return read(fname)
 
-desc = read_to_rst('README.md')
+desc = read('README.md')
 
 version_dummy = {}
-exec(read('manifold/__version__.py'), version_dummy)
+exec(read('cellSLAM/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
 del version_dummy
 
-setup(name = 'manifold',
+setup(name = 'cellSLAM',
       version = __version__,
       author = "Max Zwiessele",
       author_email = "ibinbei@gmail.com",
-      description = ("Manifold metric and correction techniques for (Bayesian) GPLVM"),
+      description = ("cellSLAM metric and correction techniques for (Bayesian) GPLVM"),
       long_description=desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
-      url = "https://github.com/mzwiessele/manifold",
-      packages = ["manifold",
-                  "manifold.tests"
-                  "manifold.simulation"
+      url = "https://github.com/mzwiessele/cellSLAM",
+      packages = ["cellSLAM",
+                  "cellSLAM.tests"
+                  "cellSLAM.simulation"
                   ],
-      package_dir={'manifold': 'manifold'},
-      py_modules = ['manifold.__init__'],
-      test_suite = 'manifold.tests',
-      install_requires=['GPy>=0.8'],
+      package_dir={'cellSLAM': 'cellSLAM'},
+      py_modules = ['cellSLAM.__init__'],
+      test_suite = 'cellSLAM.tests',
+      install_requires=['GPy>=1'],
       classifiers=['License :: OSI Approved :: BSD License',
                    'Natural Language :: English',
                    'Operating System :: MacOS :: MacOS X',

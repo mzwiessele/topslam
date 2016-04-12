@@ -9,7 +9,7 @@ def transform_to_wad(X, mu, std, steepness=2):
 
 def waddington_landscape(m, resolution=60):
     """
-    Extract waddingtons landscape from a (Bayesian-)GPLVM model `m`.
+    Extract Waddington's landscape from a (Bayesian-)GPLVM model `m`.
     The landscape surface is extracted using a grid in the inputs with
     size [resolution x resolution].
 

@@ -27,8 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
-
-from . import distances
+cellSLAMfrom . import distances
 
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.sparse import csr_matrix, find, lil_matrix
@@ -48,7 +47,7 @@ class ManifoldCorrection(object):
         :param [GPy.models.BayesianGPLVM,GPy.models.GPLVM] gplvm:
             an optimized GPLVM or BayesianGPLVM model from GPy
         :param func dist: dist(X,G), the distance to use for pairwise distances
-            in X using the manifold embedding G
+            in X using the cellSLAM embedding G
         :param array-like dimensions: The dimensions of the latent space to use [default: self.gplvm.get_most_significant_input_dimensions()[:2]]
         """
         self.gplvm = gplvm
@@ -82,7 +81,7 @@ class ManifoldCorrection(object):
     def manifold_corrected_distance_matrix(self):
         """
         Returns the distances between all pairs of inputs, corrected for
-        the manifold embedding.
+        the cellSLAM embedding.
         """
         if getattr(self, '_M', None) is None:
             self._M = csr_matrix(self.distance(self.X, self.G))
@@ -93,7 +92,7 @@ class ManifoldCorrection(object):
         """
         Create a minimal spanning tree using the distance correction method given.
 
-        You can explore different distance corrections in manifold.distances.
+        You can explore different distance corrections in cellSLAM.distances.
         """
         if getattr(self, '_mst', None) is None:
             self._mst = minimum_spanning_tree(self.manifold_corrected_distance_matrix)
@@ -102,7 +101,7 @@ class ManifoldCorrection(object):
     @property
     def graph(self):
         """
-        Return the correction graph to use for this manifold correction object.
+        Return the correction graph to use for this cellSLAM correction object.
         """
         raise NotImplemented("Implement the graph extraction property for this class")
 
@@ -149,7 +148,7 @@ class ManifoldCorrection(object):
         hops to make in order to get from one point to another.
 
         This can be very helpful in doing structure analysis
-        and clustering of the manifold embedded data points.
+        and clustering of the cellSLAM embedded data points.
 
         returns hops, the pairwise number of hops between points along the tree.
         """
@@ -161,7 +160,7 @@ class ManifoldCorrection(object):
     def linkage_in_structure(self):
         """
         Return the UPGMA linkage matrix based on the correlation structure of
-        the manifold embedding MST
+        the cellSLAM embedding MST
         """
         if getattr(self, '_struct_linkage', None) is None:
             self._struct_linkage = average(pdist(self.distances_in_structure, metric='correlation'))

@@ -28,20 +28,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from .distance_correction import ManifoldCorrection
-from . import distances
+from cellSLAM import ManifoldCorrectioncellSLAMfrom . import distances
 import numpy as np
 from scipy.sparse.csgraph._shortest_path import dijkstra
 from scipy.sparse.lil import lil_matrix
 from scipy.sparse.extract import find
 
 class ManifoldCorrectionKNN(ManifoldCorrection):
-    def __init__(self, gplvm, k, include_mst=True, distance=distances.mean_embedding_dist):
+    def __init__(self, gplvm, k, include_mst=True, distance=distances.mean_embedding_dist, dimensions=None):
         """
         Construct a correction class for the BayesianGPLVM given.
 
         This correction uses a knn-graph object in order to go along
-        the manifold.
+        the cellSLAM.
 
         All evaluations on this object are lazy, so do not change attributes
         at runtime in order to have a consistent model.
@@ -55,11 +54,11 @@ class ManifoldCorrectionKNN(ManifoldCorrection):
         :param int k: number of neighbours to use for this knn-graph correction
         :param bool include_mst: whether to include the mst into the knn-graph [default: True]
         :param func dist: dist(X,G), the distance to use for pairwise distances
-            in X using the manifold embedding G
+            in X using the cellSLAM embedding G
         """
         self.k = k
         self.include_mst = include_mst
-        super(ManifoldCorrectionKNN, self).__init__(gplvm, distance)
+        super(ManifoldCorrectionKNN, self).__init__(gplvm, distance, dimensions=dimensions)
 
     @property
     def graph(self):
@@ -86,7 +85,7 @@ class ManifoldCorrectionKNN(ManifoldCorrection):
 
     def tree_pseudo_time(self, start):
         """
-        Returns the pseudo times along the tree correction of the manifold
+        Returns the pseudo times along the tree correction of the cellSLAM
         for the given starting point `start` to all other points (including `start`).
 
         If the starting point is not a leaf, we will select a direction randomly
