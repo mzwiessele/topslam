@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from cellSLAM import simulate_latent_space, simulate_new_Y, guo_simulation
+from . import simulate_latent_space, simulate_new_Y, guo_simulation
 
 import numpy as np
 
