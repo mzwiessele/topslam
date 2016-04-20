@@ -73,9 +73,9 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
     n_data = t.shape[0]
 
     ulabs = [labels[0]]
-    
+
     newlabs = []
-    
+
     for x in range(n_data):
         if labels[x] != ulabs[-1]:
             ulabs.append(labels[x])
@@ -154,7 +154,7 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
     Xsim /= Xsim.std(0)
     #Xsim += np.random.normal(0,var,Xsim.shape)
 
-    return Xsim, seed, newlabs
+    return Xsim, seed, np.asarray(newlabs)
 
 def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     n_data = Xsim.shape[0]

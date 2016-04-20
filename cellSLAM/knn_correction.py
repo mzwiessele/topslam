@@ -28,9 +28,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from cellSLAM import ManifoldCorrectioncellSLAMfrom . import distances
+from .distance_correction import ManifoldCorrection
+from . import distances
 import numpy as np
-from scipy.sparse.csgraph._shortest_path import dijkstra
 from scipy.sparse.lil import lil_matrix
 from scipy.sparse.extract import find
 

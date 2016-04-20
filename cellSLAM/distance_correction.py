@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
-cellSLAMfrom . import distances
+from . import distances
 
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.sparse import csr_matrix, find, lil_matrix
