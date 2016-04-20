@@ -4,6 +4,30 @@
 
 Extracting and using probabilistic Waddington's landscape recreation from single cell gene expression measurements.
 
+## Citations:
+
+## Citation
+
+## Citation
+
+    TODO: Journal citation
+
+    @Misc{cellSLAM2016,
+      author =   {{Max Zwiessele}},
+      title =    {{cellSLAM}: Probabilistic Epigenetic Landscapes for Single Cell Gene Expression Experiments},
+      howpublished = {\url{https://github.com/mzwiessele/cellSLAM}},
+      year = {2012--2015}
+    }
+
+
+    @Misc{gpy2014,
+      author =   {{The GPy authors}},
+      title =    {{GPy}: A Gaussian process framework in python},
+      howpublished = {\url{http://github.com/SheffieldML/GPy}},
+      year = {2012--2015}
+    }
+
+
 ## Installation
 
 `$ pip install cellSLAM`
@@ -27,6 +51,14 @@ selected subset of genes in order to learn a BayesianGPLVM for it.
 We provide an optimization routine in `cellSLAM.optimize.optimize_model`, which optimizes a model in the way we optimize the models. 
 This is only a first order help for optimization. If you have trouble optimizing your data, consider z-normalization before optimization. 
 Additionally we provide a model creator, which creates a BayesianGPLVM model for you. See the example application below for usage.
+
+Remarks for an optimized model for standard normalized data (zero mean and unit variance) after optimization:
+
+  - Gaussian_noise.variance smaller then 0.5
+  - rbf.variance value between 0 and 1, but bigger then Gaussian_noise.variance
+  - dimensionality of landscape can be seen by m.kern.plot_ARD(), big values are used dimensions.
+  - plot_latent does not show Waddington's landscape (as grayscale), but the certainty of the model.
+  - plot_magnification shows a representation of Waddington's landscape (as grayscale), although we use a transformation of that to show valleys more finegrained.
 
 ## Example Application
 
