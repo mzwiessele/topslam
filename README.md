@@ -4,27 +4,23 @@
 
 Extracting and using probabilistic Waddington's landscape recreation from single cell gene expression measurements.
 
-## Citations:
-
 ## Citation
 
-## Citation
-
-    TODO: Journal citation
+    Journal publication pending
 
     @Misc{cellSLAM2016,
       author =   {{Max Zwiessele}},
       title =    {{cellSLAM}: Probabilistic Epigenetic Landscapes for Single Cell Gene Expression Experiments},
       howpublished = {\url{https://github.com/mzwiessele/cellSLAM}},
-      year = {2012--2015}
+      year = {since 2016}
     }
 
 
     @Misc{gpy2014,
-      author =   {{The GPy authors}},
+      author =   {{GPy}},
       title =    {{GPy}: A Gaussian process framework in python},
       howpublished = {\url{http://github.com/SheffieldML/GPy}},
-      year = {2012--2015}
+      year = {since 2012}
     }
 
 

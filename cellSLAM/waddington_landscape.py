@@ -49,7 +49,7 @@ def waddington_landscape(m, resolution=60, xmargin=(.075, .075), ymargin=(.075, 
 
 def plot_waddington_landscape(Xgrid, wadXgrid, X, wadX, ulabels, labels, resolution=60, ncol=5, cmap='terrain', cstride=1, rstride=1, **kw):
     """
-    Plot a waddngton landscape with data.
+    Plot a waddngton landscape with data in 3D.
     Xgrid and wad are the landscape (surface plot, [resolution x resolution])
     and X and wadX are the datapoints as returned by
     Xgrid, wadXgrid, X, wadX = waddington_landscape(m).
