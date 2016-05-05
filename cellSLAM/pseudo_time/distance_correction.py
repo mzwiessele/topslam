@@ -26,18 +26,18 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
-from . import distances
+#===============================================================================cellSLAM.pseudo_timefrom . import distances
 
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.sparse import csr_matrix, find, lil_matrix
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist, squareform
+from .distances import mean_embedding_dist
 
 import numpy as np
 
 class ManifoldCorrection(object):
-    def __init__(self, gplvm, distance=distances.mean_embedding_dist, dimensions=None):
+    def __init__(self, gplvm, distance=mean_embedding_dist, dimensions=None):
         """
         Construct a correction class for the BayesianGPLVM given.
 
@@ -58,6 +58,10 @@ class ManifoldCorrection(object):
 
     @property
     def X(self):
+        return self.Xgplvm[:,self.dimensions]
+
+    @property
+    def Xgplvm(self):
         if getattr(self, '_X', None) is None:
             try:
                 _X = self.gplvm.X.mean
@@ -74,7 +78,7 @@ class ManifoldCorrection(object):
     @property
     def G(self):
         if getattr(self, '_G', None) is None:
-            self._G = self.gplvm.predict_wishard_embedding(self.X)
+            self._G = self.gplvm.predict_wishard_embedding(self.Xgplvm)
         return self._G
 
     @property
@@ -84,7 +88,7 @@ class ManifoldCorrection(object):
         the cellSLAM embedding.
         """
         if getattr(self, '_M', None) is None:
-            self._M = csr_matrix(self.distance(self.X, self.G))
+            self._M = csr_matrix(self.distance(self.Xgplvm, self.G))
         return self._M
 
     @property
@@ -92,7 +96,7 @@ class ManifoldCorrection(object):
         """
         Create a minimal spanning tree using the distance correction method given.
 
-        You can explore different distance corrections in cellSLAM.distances.
+        You can explore different distance corrections in cellSLAM.pseudo_time.distances.
         """
         if getattr(self, '_mst', None) is None:
             self._mst = minimum_spanning_tree(self.manifold_corrected_distance_matrix)
@@ -109,7 +113,7 @@ class ManifoldCorrection(object):
         self._graph_distances, self._predecessors = dijkstra(self.graph, directed=False, return_predecessors=True)
 
     @property
-    def distances_along_graph(self):
+    def graph_distances(self):
         """
         Return all distances along the graph.
 
@@ -137,7 +141,7 @@ class ManifoldCorrection(object):
         Return the UPGMA linkage matrix for the distances along the graph.
         """
         if getattr(self, '_dist_linkage', None) is None:
-            self._dist_linkage = average(squareform(self.distances_along_graph))
+            self._dist_linkage = average(squareform(self.graph_distances))
         return self._dist_linkage
 
     @property
@@ -186,7 +190,7 @@ class ManifoldCorrection(object):
         time along the tree, starting from `start`.
         """
         test_graph = csr_matrix(self.graph.shape)
-        D = self.distances_along_graph
+        D = self.graph_distances
         for i,j in zip(*find(self.graph)[:2]):
             test_graph[i,j] = D[start,j]
             if j == start:
@@ -219,3 +223,33 @@ class ManifoldCorrection(object):
             else:
                 paths.append(path[::-1])
         return paths
+    
+    def get_pseudo_time(self, start):
+        """
+        Returns the pseudo times along the tree correction of the cellSLAM
+        for the given starting point `start` to all other points (including `start`).
+
+        If the starting point is not a leaf, we will select a direction randomly
+        and go backwards in time for one direction and forward for the other.
+
+        :param int start: The index of the starting point in self.X
+        """
+        D = self.graph_distances
+        preds = self.graph_predecessors
+        junc = []
+        left = -9999
+        for _tmp in preds[:,start]:
+            if _tmp != -9999:
+                if _tmp not in junc:
+                    junc.append(_tmp)
+                    #left = junc[0]
+            if len(junc) == 2:
+                if ((preds[:,0]==junc[0]).sum() > (preds[:,0]==junc[1]).sum()):
+                    left = junc[1]
+                else:
+                    left = junc[0]
+                break
+        pseudo_time = D[start]
+        if left != -9999:
+            pseudo_time[preds[:,start]==left] *= -1
+        return pseudo_time

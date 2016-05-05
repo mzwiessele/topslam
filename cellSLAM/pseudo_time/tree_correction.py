@@ -59,34 +59,3 @@ class ManifoldCorrectionTree(ManifoldCorrection):
     @property
     def graph(self):
         return self.minimal_spanning_tree
-
-    def tree_pseudo_time(self, start):
-        """
-        Returns the pseudo times along the tree correction of the cellSLAM
-        for the given starting point `start` to all other points (including `start`).
-
-        If the starting point is not a leaf, we will select a direction randomly
-        and go backwards in time for one direction and forward for the other.
-
-        :param int start: The index of the starting point in self.X
-        """
-        D = self.tree_corrected_distances
-        preds = self._corrected_distances[1]
-        junc = []
-        left = -9999
-        for _tmp in preds[:,start]:
-            if _tmp != -9999:
-                if _tmp not in junc:
-                    junc.append(_tmp)
-                    #left = junc[0]
-            if len(junc) == 2:
-                if ((preds[:,0]==junc[0]).sum() > (preds[:,0]==junc[1]).sum()):
-                    left = junc[1]
-                else:
-                    left = junc[0]
-                break
-        pseudo_time = D[start]
-        if left != -9999:
-            pseudo_time[preds[:,start]==left] *= -1
-        return pseudo_time
-
