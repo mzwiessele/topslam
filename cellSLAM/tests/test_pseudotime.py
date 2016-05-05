@@ -1,21 +1,21 @@
 #===============================================================================
 # Copyright (c) 2016, Max Zwiessele
 # All rights reserved.
-#
+# 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-#
+# 
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-#
+# 
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-#
+# 
 # * Neither the name of cellSLAM nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-#
+# 
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,34 +28,31 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from .distance_correction import ManifoldCorrection
-from . import distances
+import unittest, numpy as np, GPy
 
-class ManifoldCorrectionTree(ManifoldCorrection):
 
-    def __init__(self, gplvm, distance=distances.mean_embedding_dist, dimensions=None):
-        """
-        Construct a correction class for the BayesianGPLVM given.
+class Test(unittest.TestCase):
 
-        This correction uses a knn-graph object in order to go along
-        the cellSLAM.
 
-        All evaluations on this object are lazy, so do not change attributes
-        at runtime in order to have a consistent model.
+    def setUp(self):
+        np.random.seed(1000)
+        t = np.sort(np.random.uniform(0,1,300))
+        k = GPy.kern.Matern32(2, lengthscale=[1.4, 1.2], ARD=True) + GPy.kern.White(2, variance=1e-4)
+        X = np.random.multivariate_normal(np.zeros(t.shape[0]), k.K(t.repeat(2).reshape(-1,2)), size=2).T 
+        k = GPy.kern.Matern32(2, lengthscale=[3, 2], ARD=True) + GPy.kern.White(2, 1e-3)
+        Y = np.random.multivariate_normal(np.zeros(t.shape[0]), k.K(X), size=36).T
+        
+        m = GPy.models.BayesianGPLVM(Y, 5, num_inducing=35)
+        
+        self.t = t
+        self.X = X
+        self.Y = Y
+        self.m = m
 
-        You can add the minimal spanning tree in, in order to
-        ensure a fully connected graph. This only adds edges which are not already there,
-        so that the connections are made.
+    def testName(self):
+        pass
 
-        :param [GPy.models.BayesianGPLVM,GPy.models.GPLVM] gplvm:
-            an optimized GPLVM or BayesianGPLVM model from GPy
-        :param int k: number of neighbours to use for this knn-graph correction
-        :param bool include_mst: whether to include the mst into the knn-graph [default: True]
-        :param func dist: dist(X,G), the distance to use for pairwise distances
-            in X using the cellSLAM embedding G
-        """
-        super(ManifoldCorrectionTree, self).__init__(gplvm, distance, dimensions=dimensions)
 
-    @property
-    def graph(self):
-        return self.minimal_spanning_tree
+if __name__ == "__main__":
+    #import sys;sys.argv = ['', 'Test.testName']
+    unittest.main()
