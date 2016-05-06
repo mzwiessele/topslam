@@ -52,13 +52,6 @@ def filter_RNASeq(E, transform_log1p=True):
     Y = E.copy()
     print ("Before filtering: #cells={} #genes={}".format(*Y.shape))
 
-    # take only the cellcycle genes, for maximum coverage of time line
-    # Take cellcycle genes from Macosko et al. 2015
-    # converted by the DAVID (from OFFICIAL_GENE_SYMBOL to ENSEMBL_GENE_ID)
-    #cellcycle_conversion = pd.read_csv('Trapnell/MacoskoCCConversionENS.txt', sep='\t')
-    #cellcycle_filter = np.intersect1d(cellcycle_conversion.From.apply(str.upper), Y.columns.to_series().apply(str.upper))
-    #Y = Y[cellcycle_filter]
-
     # omit cells with no coverage
     fil = (Y.sum(1)>0).values
     Y = Y.loc[fil, :]

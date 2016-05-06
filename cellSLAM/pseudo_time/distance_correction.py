@@ -26,15 +26,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================cellSLAM.pseudo_timefrom . import distances
+#===============================================================================
 
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
-from scipy.sparse import csr_matrix, find, lil_matrix
+from scipy.sparse import find, lil_matrix
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist, squareform
 from .distances import mean_embedding_dist
 from ..landscape import waddington_landscape
-from ..plotting import plot_graph_nodes
 
 import matplotlib.pyplot as plt
 
@@ -92,7 +91,7 @@ class ManifoldCorrection(object):
         the cellSLAM embedding.
         """
         if getattr(self, '_M', None) is None:
-            self._M = csr_matrix(self.distance(self.Xgplvm, self.G))
+            self._M = lil_matrix(self.distance(self.Xgplvm, self.G))
         return self._M
 
     @property
@@ -187,14 +186,14 @@ class ManifoldCorrection(object):
         """
         return dendrogram(linkage, **kwargs)
 
-    def get_time_graph(self, start):
+    def get_time_graph(self, start, estimate_direction=True):
         """
         Returns a graph, where all edges are filled with the distance from
         `start`. This is mostly for plotting purposes, visualizing the
         time along the tree, starting from `start`.
         """
-        test_graph = csr_matrix(self.graph.shape)
-        pt = self.get_pseudo_time(start)
+        test_graph = lil_matrix(self.graph.shape)
+        pt = self.get_pseudo_time(start, estimate_direction=estimate_direction)
         for i,j in zip(*find(self.graph)[:2]):
             test_graph[i,j] = pt[j]
             if j == start:
@@ -211,7 +210,6 @@ class ManifoldCorrection(object):
         """
         S = self.distances_in_structure
         preds = self.graph_predecessors
-        distances = S[start]
         maxdist = S[start].max()
         ends = (S[start]==maxdist).nonzero()[0]
         paths = []
@@ -316,14 +314,14 @@ class ManifoldCorrection(object):
     
         (Xgrid, wadXgrid, X, wadX) = waddington_landscape(self.gplvm, resolution, xmargin, ymargin)
         r = lambda x: x.reshape(resolution, resolution).T
-        CS = ax.contourf(r(Xgrid[:,0]), r(Xgrid[:,1]), r(wadXgrid), linewidths=.6, cmap=cmap)
+        CS = ax.contourf(r(Xgrid[:,0]), r(Xgrid[:,1]), r(wadXgrid), cmap=cmap)
         mi, ma = Xgrid.min(0), Xgrid.max(0)
         ax.set_xlim(mi[0], ma[0])
         ax.set_ylim(mi[1], ma[1])
     
         return ax
     
-    def plot_time_graph(self, labels=None, ulabels=None, start=0, startoffset=(10,5), ax=None, cmap='magma'):
+    def plot_time_graph(self, labels=None, ulabels=None, start=0, startoffset=(10,5), ax=None, estimate_direction=True, cmap='magma'):
         
         if ulabels is None and labels is not None:
             ulabels = []
@@ -337,22 +335,22 @@ class ManifoldCorrection(object):
         else:
             fig = ax.figure
             
-        self.plot_graph_nodes(labels, ulabels, start, ax, cmap=cmap)
+        self.plot_graph_nodes(labels, ulabels, start, ax, cmap=cmap, estimate_direction=estimate_direction)
         if labels is not None:
-            self.plot_graph_labels(labels, ulabels=ulabels, start=start, ax=ax, cmap=cmap)
-        self.plot_time_graph_edges(start, startoffset, ax, cmap)    
+            self.plot_graph_labels(labels, ulabels=ulabels, start=start, ax=ax, estimate_direction=estimate_direction, cmap=cmap)
+        self.plot_time_graph_edges(start, startoffset, ax, estimate_direction=estimate_direction, cmap=cmap)    
         #ax.legend(bbox_to_anchor=(0., 1.02, 1.2, .102), loc=3,
         #           ncol=4, mode="expand", borderaxespad=0.)
         return ax
 
-    def plot_time_graph_edges(self, start=0, startoffset=(10,5), ax=None, cmap='magma'):
+    def plot_time_graph_edges(self, start=0, startoffset=(10,5), ax=None, estimate_direction=True, cmap='magma'):
         if ax is None:
             fig, ax = plt.subplots()
         else:
             fig = ax.figure
         import networkx as nx
         X = self.X
-        G = nx.Graph(self.get_time_graph(start))
+        G = nx.Graph(self.get_time_graph(start, estimate_direction=estimate_direction))
         ecols = [e[2]['weight'] for e in G.edges(data=True)]
         cmap = plt.get_cmap(cmap)    
         pos = dict([(i, x) for i, x in zip(range(X.shape[0]), X)])
@@ -380,7 +378,8 @@ class ManifoldCorrection(object):
                         )
 
 
-    def plot_graph_nodes(self, labels=None, ulabels=None, start=0, ax=None, cmap='magma', cmap_index=None, box=True, text_kwargs=None, **scatter_kwargs):
+    def plot_graph_nodes(self, labels=None, ulabels=None, start=0, ax=None, cmap='magma', 
+                         cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
         import itertools
@@ -402,7 +401,7 @@ class ManifoldCorrection(object):
             fig = ax.figure
     
         X = self.X
-        pt = self.get_pseudo_time(start)
+        pt = self.get_pseudo_time(start, estimate_direction)
     
         if len(ulabels) <= 1:
             ax.scatter(*X.T, linewidth=.1, c=pt, alpha=.8, edgecolor='w', marker=next(marker), label=None, cmap=cmap)
@@ -415,11 +414,11 @@ class ManifoldCorrection(object):
                 fil = (labels==l)
                 ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l)
         
-    def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma', cmap_index=None, box=True, text_kwargs=None, **scatter_kwargs):
+    def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma', 
+                          cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
         import itertools
-        marker = itertools.cycle('<>sd^')
     
         if ulabels is None:
             ulabels = []
@@ -434,7 +433,7 @@ class ManifoldCorrection(object):
             fig = ax.figure
     
         X = self.X
-        pt = self.get_pseudo_time(start)
+        pt = self.get_pseudo_time(start, estimate_direction)
     
         label_pos, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
         colors = _get_colors(cmap, col, mi, ma, cmap_index)
@@ -461,6 +460,7 @@ def _get_colors(cmap, col, mi, ma, cmap_index):
         cmap = plt.cm.get_cmap(cmap)
         colors = dict([(l, (cmap((col[l]-mi)/(ma-mi)), (col[l]-mi)/(ma-mi))) for l in col])
     else:
+        import seaborn as sns
         cmap = sns.color_palette(cmap, len(col))[cmap_index]
         r = np.linspace(0,1,len(col))[cmap_index]
         colors = dict([(l, (cmap, r)) for l in col])

@@ -33,12 +33,37 @@ from sklearn.decomposition import FastICA, PCA
 from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
 import numpy as np
 
-methods = {'t-SNE':TSNE(n_components=2),
+methods = {'t-SNE':TSNE(n_components=2, perplexity=50, learning_rate=750, n_iter=2000, init='pca'),
            'PCA':PCA(n_components=2),
-           'Spectral': SpectralEmbedding(n_components=2, n_neighbors=10),
-           'Isomap': Isomap(n_components=2, n_neighbors=10),
+           'Spectral': SpectralEmbedding(n_components=2, n_neighbors=20),
+           'Isomap': Isomap(n_components=2, n_neighbors=20),
            'ICA': FastICA(n_components=2)
            }
+
+def run_methods(Y, methods):
+    order = methods.keys()
+    dims = {}
+    i = 0
+    for name in order:
+        method = methods[name]
+        q = method.n_components
+        dims[name] = slice(i, i+q)
+        i += q
+
+    latent_spaces = np.empty((Y.shape[0], i))
+
+    for name in methods:
+        method = methods[name]
+        try:
+            _lat = method.fit_transform(Y)
+            latent_spaces[:, dims[name]] = _lat
+        except:
+            raise
+            print("Error detected in running method, ignoring this method as NAN")
+    latent_spaces -= latent_spaces.mean(0)
+    latent_spaces /= latent_spaces.std(0)
+    return latent_spaces, dims
+
 
 def optimize_model(m):
     """

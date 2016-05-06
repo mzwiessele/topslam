@@ -30,24 +30,26 @@
 
 import unittest, numpy as np, GPy
 
-
 class Test(unittest.TestCase):
-
-
     def setUp(self):
-        np.random.seed(1000)
-        t = np.sort(np.random.uniform(0,1,300))
-        k = GPy.kern.Matern32(2, lengthscale=[1.4, 1.2], ARD=True) + GPy.kern.White(2, variance=1e-4)
-        X = np.random.multivariate_normal(np.zeros(t.shape[0]), k.K(t.repeat(2).reshape(-1,2)), size=2).T 
-        k = GPy.kern.Matern32(2, lengthscale=[3, 2], ARD=True) + GPy.kern.White(2, 1e-3)
-        Y = np.random.multivariate_normal(np.zeros(t.shape[0]), k.K(X), size=36).T
+        from cellSLAM.simulation.simulate_trajectory import make_cell_division_times, simulate_latent_space, simulate_new_Y
+        seed = 1234
+        n_divisions = 6
+        p_dims = 2000
         
-        m = GPy.models.BayesianGPLVM(Y, 5, num_inducing=35)
+        t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
+        c = np.log2(labels) / n_divisions
+        #c = t
+        xvar = .3
+        Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+        Y = simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.3)
         
         self.t = t
-        self.X = X
+        self.X = Xsim
+        np.random.seed(42)
         self.Y = Y
-        self.m = m
+        
+        
 
     def testName(self):
         pass

@@ -30,8 +30,9 @@
 
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import squareform
-import numpy as np, networkx as nx, itertools
-from .landscape import waddington_landscape
+import numpy as np
+from cellSLAM.pseudo_time.distance_correction import _get_label_pos, _get_colors
+from GPy.plotting.gpy_plot.plot_util import find_best_layout_for_subplots
 
 def plot_dist_hist(M, ax=None):
     if ax is None:
@@ -40,3 +41,82 @@ def plot_dist_hist(M, ax=None):
     D = np.einsum('ijq,ijq->ij',d_m,d_m)
     _ = ax.hist(squareform(D), bins=200)
 
+
+def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', cmap_index=None, box=True, text_kwargs=None, **scatter_kwargs):
+    fig = plt.figure(figsize=(10,5))
+    
+    rows, cols = find_best_layout_for_subplots(len(dims)+1)
+    gs = plt.GridSpec(rows,cols)
+    axes = np.empty((rows,cols), object)
+
+    for r in range(rows):
+        for c in range(cols):
+            axes[r,c] = fig.add_subplot(gs[(r):((r+1)), c])#, sharex=axes[r-1,c], sharey=axes[r,c-1])
+            plt.setp(axes[r,c].get_xticklabels(), visible=False)
+            plt.setp(axes[r,c].get_yticklabels(), visible=False)
+            plt.setp(axes[r,c].get_xticklines(), visible=False)
+            plt.setp(axes[r,c].get_yticklines(), visible=False)
+            #axes[r,c].set_axis_bgcolor('none')
+
+    axit = axes.flat
+    ax = next(axit)
+    #try:
+    #    msi = m.get_most_significant_input_dimensions()[:2]
+    #except:
+    #    msi = m.Y0.get_most_significant_input_dimensions()[:2]
+    #m.plot_magnification(labels=labels,
+    #                     resolution=20,
+    #                     scatter_kwargs=dict(s=40, lw=.1, edgecolor='w'),
+    #                     ax=ax,
+    ##                     plot_scatter=False,
+    #                    legend=False)
+    #X = m.X.mean[:, m.get_most_significant_input_dimensions()[:2]]
+    #
+    #plot_graph_nodes(X, pt, labels, ulabels, ax, cmap=cmap, cmap_index=cmap_index, box=True)
+    mc.plot_waddington_landscape(ax=ax)
+    mc.plot_graph_nodes(ax=ax, labels=labels, ulabels=ulabels, start=start)
+    mc.plot_graph_labels(labels, ulabels=ulabels, ax=ax, start=start)
+    
+    #for lab in ulabels:
+    #    x, y = X[lab==labels].T
+    #    ax.scatter(x, y, c=colors[lab], marker=marker[lab], label=lab, lw=0.1, edgecolor='w', s=40)
+
+    #ax.set_xlabel('')
+    #ax.set_ylabel('')
+    ax.text(0.01,.98,"cellSLAM",va='top',transform=ax.transAxes,color='w')
+
+    pt = mc.get_pseudo_time(start=start)
+    import itertools
+    
+    i = 0
+    for name in dims:
+        ax = next(axit)
+        X = X_init[:,dims[name]]
+        label_pos, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
+        colors = _get_colors(cmap, col, mi, ma, cmap_index)
+        marker = itertools.cycle('<>sd^')
+        for l in ulabels:
+            #c = Tango.nextMedium()
+            c, r = colors[l]
+            p = label_pos[l]
+            fil = (labels==l)
+            ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l, **scatter_kwargs)
+            rgbc = c#[_c/255. for _c in Tango.hex2rgb(c)]
+            if r <.5:
+                ec = 'w'
+            else:
+                ec = 'k'
+            if box:
+                fc = list(rgbc)
+                #fc[-1] = .7
+                props = dict(boxstyle='round', facecolor=fc, alpha=0.8, edgecolor=ec)
+            else:
+                props = dict()
+            ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {})
+        ax.text(0.01,.98,name,va='top',transform=ax.transAxes)
+        i += 2
+    try:
+        fig.tight_layout(pad=0)
+    except:
+        print("Plot Warning: Tight layout failed, continueing without")
+    return fig, axes
