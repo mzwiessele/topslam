@@ -42,7 +42,11 @@ def plot_dist_hist(M, ax=None):
     _ = ax.hist(squareform(D), bins=200)
 
 
-def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', cmap_index=None, box=True, text_kwargs=None, **scatter_kwargs):
+def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', 
+                    cmap_index=None, box=True, text_kwargs=None, 
+                    adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
+                                                                    fc=".6", ec="none")),
+                    **scatter_kwargs):
     fig = plt.figure(figsize=(10,5))
     
     rows, cols = find_best_layout_for_subplots(len(dims)+1)
@@ -95,6 +99,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', cmap
         label_pos, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
         colors = _get_colors(cmap, col, mi, ma, cmap_index)
         marker = itertools.cycle('<>sd^')
+        texts = []
         for l in ulabels:
             #c = Tango.nextMedium()
             c, r = colors[l]
@@ -109,12 +114,15 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', cmap
             if box:
                 fc = list(rgbc)
                 #fc[-1] = .7
-                props = dict(boxstyle='round', facecolor=fc, alpha=0.8, edgecolor=ec)
+                props = dict(boxstyle='round', facecolor=fc, alpha=0.6, edgecolor=ec)
             else:
                 props = dict()
-            ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {})
+            texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {}))
         ax.text(0.01,.98,name,va='top',transform=ax.transAxes)
         i += 2
+    from adjustText import adjust_text
+    adjust_text(texts, **adjust_kwargs)
+
     try:
         fig.tight_layout(pad=0)
     except:
