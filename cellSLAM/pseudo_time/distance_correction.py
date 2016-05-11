@@ -417,7 +417,7 @@ class ManifoldCorrection(object):
     def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma', 
                           cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, 
                           adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
-                                                                          fc="r", ec="none")),
+                                                                          fc=".6", ec="none")),
                           **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
@@ -452,7 +452,7 @@ class ManifoldCorrection(object):
                     ec = 'k'
                 fc = list(rgbc)
                 #fc[-1] = .7
-                props = dict(boxstyle='round', facecolor=fc, alpha=0.2, edgecolor=ec, pad=0.02)
+                props = dict(boxstyle='round', facecolor=fc, alpha=0.6, edgecolor=ec, pad=0.02)
             else:
                 props = dict()
                 ec='k'
