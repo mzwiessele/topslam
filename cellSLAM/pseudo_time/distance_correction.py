@@ -418,7 +418,7 @@ class ManifoldCorrection(object):
                           cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, 
                           adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
                                                                           fc=".6", ec="none"),
-                                                          ha='center', va='center'),
+                                                          ha='center', va='center', force_text=.5),
                           **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()

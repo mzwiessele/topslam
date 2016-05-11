@@ -47,7 +47,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
                     adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
                                                                     fc=".6", ec="none",
                                                                     ),
-                                                    ha='center', va='center'),
+                                                    ha='center', va='center', force_text=.5, precision=.5),
                     **scatter_kwargs):
     fig = plt.figure(figsize=(10,5))
     
