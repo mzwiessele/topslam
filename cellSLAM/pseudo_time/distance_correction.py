@@ -462,8 +462,9 @@ class ManifoldCorrection(object):
         if adjust:
             from adjustText import adjust_text
             xlim, ylim = ax.get_xlim(), ax.get_ylim()
-            xy = np.mgrid[xlim[0]:xlim[1]:100j,ylim[0]:ylim[1]:2j]
-            x, y = np.concatenate([xy, np.mgrid[xlim[0]:xlim[1]:2j,ylim[0]:ylim[1]:100j].swapaxes(1,2)], axis=1)
+            x1, y1 = np.mgrid[xlim[0]:xlim[1]:100j,ylim[0]:ylim[1]:2j]
+            x2, y2 = np.mgrid[xlim[0]:xlim[1]:2j,ylim[0]:ylim[1]:100j]
+            x, y = np.r_[x1[:,0], x2[1], x1[::-1,1], x2[0]], np.r_[y1[:,0], y2[1], y1[:,1], y2[0,::-1]]
             adjust_text(texts, x, y, ax=ax, **adjust_kwargs)
         return ax
 
