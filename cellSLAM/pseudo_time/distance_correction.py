@@ -415,10 +415,12 @@ class ManifoldCorrection(object):
                 ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l)
         
     def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma', 
-                          cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, **scatter_kwargs):
+                          cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, 
+                          adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
+                                                                          fc="r", ec="none")),
+                          **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
-        import itertools
     
         if ulabels is None:
             ulabels = []
@@ -437,22 +439,28 @@ class ManifoldCorrection(object):
     
         label_pos, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
         colors = _get_colors(cmap, col, mi, ma, cmap_index)
+        texts = []
         for l in ulabels:
             #c = Tango.nextMedium()
             c, r = colors[l]
             p = label_pos[l]
             rgbc = c#[_c/255. for _c in Tango.hex2rgb(c)]
-            if r <.5:
-                ec = 'w'
-            else:
-                ec = 'k'
             if box:
+                if r <.5:
+                    ec = 'w'
+                else:
+                    ec = 'k'
                 fc = list(rgbc)
                 #fc[-1] = .7
-                props = dict(boxstyle='round', facecolor=fc, alpha=0.8, edgecolor=ec)
+                props = dict(boxstyle='round', facecolor=fc, alpha=0.2, edgecolor=ec, pad=0.02)
             else:
                 props = dict()
-            ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {})
+                ec='k'
+            texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {}))
+        if adjust:
+            from adjustText import adjust_text
+            adjust_text(texts, **adjust_kwargs)
+        return ax
 
 
 def _get_colors(cmap, col, mi, ma, cmap_index):
