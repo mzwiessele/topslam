@@ -119,7 +119,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
             else:
                 props = dict()
             texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {}))
-        adjust_text(texts, **adjust_kwargs)
+        adjust_text(texts, ax=ax, **adjust_kwargs)
         ax.text(0.01,.98,name,va='top',transform=ax.transAxes)
         i += 2
 
