@@ -115,7 +115,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
             if box:
                 fc = list(rgbc)
                 #fc[-1] = .7
-                props = dict(boxstyle='round', facecolor=fc, alpha=0.6, edgecolor=ec, pad=0.05)
+                props = dict(boxstyle='round', facecolor=fc, alpha=0.6, edgecolor=ec, pad=0.2)
             else:
                 props = dict()
             texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {}))

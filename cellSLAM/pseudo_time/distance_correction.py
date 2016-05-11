@@ -452,7 +452,7 @@ class ManifoldCorrection(object):
                     ec = 'k'
                 fc = list(rgbc)
                 #fc[-1] = .7
-                props = dict(boxstyle='round', facecolor=fc, alpha=0.6, edgecolor=ec, pad=0.05)
+                props = dict(boxstyle='round', facecolor=fc, alpha=0.6, edgecolor=ec, pad=0.2)
             else:
                 props = dict()
                 ec='k'
