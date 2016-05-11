@@ -163,6 +163,30 @@ def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     splits = np.random.choice(p_dims, replace=False, size=num_classes)
     splits.sort()
 
+    #for sub in np.array_split(range(p_dims), splits):
+    for sub in np.array_split(range(p_dims), splits):
+        ky_sim = (GPy.kern.RBF(1, variance=1e-6, lengthscale=5, active_dims=[2])
+                  + GPy.kern.RBF(2, variance=.4, lengthscale=.7)
+                  + GPy.kern.Linear(2, variances=.1)
+                  + GPy.kern.RBF(2, ARD=True, variance=1, lengthscale=[9,5])
+                  #+ GPy.kern.LogisticBasisFuncKernel(2, np.random.uniform(0,10), variance=1, slope=1, active_dims=[1,2])
+                  + GPy.kern.White(3,variance=(noise_var)**2)
+                  )
+        Ky_sim = ky_sim.K(np.c_[Xsim, t])
+        Y[:, sub] = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, 2).T.dot(np.random.normal(0,1,(2, sub.size)))
+    #Ky_sim = ky_sim.K(np.c_[Xsim, t])
+    #Y = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, p_dims).T
+    Y -= Y.mean(0)
+    Y /= Y.std(0)
+    return Y
+
+def simulate_new_Y_old(Xsim, t, p_dims, num_classes=10,noise_var=.2):
+    n_data = Xsim.shape[0]
+    Y = np.empty((n_data, p_dims))
+
+    splits = np.random.choice(p_dims, replace=False, size=num_classes)
+    splits.sort()
+
     for sub in np.array_split(range(p_dims), splits):
         ky_sim = (GPy.kern.RBF(1, variance=1., lengthscale=5, active_dims=[2])
                   + GPy.kern.RBF(2, variance=1., lengthscale=.7)
@@ -178,6 +202,16 @@ def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     return Y
 
 def guo_simulation(p_dims=48, n_divisions=6, seed=None):
+    t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.01, drop_p=.6)
+    c = np.log2(labels) / n_divisions
+    #c = t
+    xvar = 1
+    Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+    def simulate_new():
+        return simulate_new_Y(Xsim, t, 48, num_classes=48, noise_var=.37)
+    return Xsim, simulate_new, t, c, labels, seed
+
+def guo_simulation_old(p_dims=48, n_divisions=6, seed=None):
     t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
     c = np.log2(labels) / n_divisions
     #c = t
