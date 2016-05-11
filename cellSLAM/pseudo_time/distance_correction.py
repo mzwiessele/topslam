@@ -417,7 +417,8 @@ class ManifoldCorrection(object):
     def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma', 
                           cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, 
                           adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
-                                                                          fc=".6", ec="none")),
+                                                                          fc=".6", ec="none",
+                                                                          ha='center', va='center')),
                           **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
@@ -456,7 +457,8 @@ class ManifoldCorrection(object):
             else:
                 props = dict()
                 ec='k'
-            texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {}))
+            texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', 
+                                 color=ec, bbox=props, **text_kwargs or {}))
         if adjust:
             from adjustText import adjust_text
             adjust_text(texts, ax=ax, **adjust_kwargs)

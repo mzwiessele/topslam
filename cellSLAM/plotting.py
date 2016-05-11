@@ -45,7 +45,8 @@ def plot_dist_hist(M, ax=None):
 def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', 
                     cmap_index=None, box=True, text_kwargs=None, 
                     adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
-                                                                    fc=".6", ec="none")),
+                                                                    fc=".6", ec="none",
+                                                                    ha='center', va='center', )),
                     **scatter_kwargs):
     fig = plt.figure(figsize=(10,5))
     
@@ -106,7 +107,8 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
             c, r = colors[l]
             p = label_pos[l]
             fil = (labels==l)
-            ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l, **scatter_kwargs)
+            ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', 
+                       marker=next(marker), label=l, **scatter_kwargs)
             rgbc = c#[_c/255. for _c in Tango.hex2rgb(c)]
             if r <.5:
                 ec = 'w'
