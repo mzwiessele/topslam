@@ -91,15 +91,16 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
 
     pt = mc.get_pseudo_time(start=start)
     import itertools
+    from adjustText import adjust_text
     
     i = 0
-    texts = []
     for name in dims:
         ax = next(axit)
         X = X_init[:,dims[name]]
         label_pos, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
         colors = _get_colors(cmap, col, mi, ma, cmap_index)
         marker = itertools.cycle('<>sd^')
+        texts = []
         for l in ulabels:
             #c = Tango.nextMedium()
             c, r = colors[l]
@@ -118,11 +119,10 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
             else:
                 props = dict()
             texts.append(ax.text(p[0], p[1], l, alpha=.9, ha='center', va='center', color=ec, bbox=props, **text_kwargs or {}))
+        adjust_text(texts, **adjust_kwargs)
         ax.text(0.01,.98,name,va='top',transform=ax.transAxes)
         i += 2
 
-    from adjustText import adjust_text
-    adjust_text(texts, **adjust_kwargs)
 
     try:
         fig.tight_layout(pad=0)
