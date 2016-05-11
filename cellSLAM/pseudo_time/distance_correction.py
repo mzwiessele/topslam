@@ -418,7 +418,7 @@ class ManifoldCorrection(object):
                           cmap_index=None, box=True, text_kwargs=None, estimate_direction=True, 
                           adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
                                                                           fc=".6", ec="none"),
-                                                          ha='center', va='center', force_text=.5),
+                                                          ha='center', va='center', force_text=.5, precision=.5),
                           **scatter_kwargs):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
@@ -461,7 +461,10 @@ class ManifoldCorrection(object):
                                  color=ec, bbox=props, **text_kwargs or {}))
         if adjust:
             from adjustText import adjust_text
-            adjust_text(texts, ax=ax, **adjust_kwargs)
+            xlim, ylim = ax.get_xlim(), ax.get_ylim()
+            xy = np.mgrid[xlim[0]:xlim[1]:100j,ylim[0]:ylim[1]:2j]
+            x, y = np.concatenate([xy, np.mgrid[xlim[0]:xlim[1]:2j,ylim[0]:ylim[1]:100j].swapaxes(1,2)], axis=1)
+            adjust_text(texts, x, y, ax=ax, **adjust_kwargs)
         return ax
 
 
