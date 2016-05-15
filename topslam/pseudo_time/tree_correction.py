@@ -1,21 +1,21 @@
 #===============================================================================
 # Copyright (c) 2016, Max Zwiessele
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
-# * Neither the name of cellSLAM nor the names of its
+#
+# * Neither the name of topslam nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,33 +28,33 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-import unittest, numpy as np, GPy
+from topslam import ManifoldCorrectiontopslamfrom . import distances
 
-class Test(unittest.TestCase):
-    def setUp(self):
-        from cellSLAM.simulation.simulate_trajectory import make_cell_division_times, simulate_latent_space, simulate_new_Y
-        seed = 1234
-        n_divisions = 6
-        p_dims = 2000
-        
-        t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
-        c = np.log2(labels) / n_divisions
-        #c = t
-        xvar = .3
-        Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
-        Y = simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.3)
-        
-        self.t = t
-        self.X = Xsim
-        np.random.seed(42)
-        self.Y = Y
-        
-        
+class ManifoldCorrectionTree(ManifoldCorrection):
 
-    def testName(self):
-        pass
+    def __init__(self, gplvm, distance=distances.mean_embedding_dist, dimensions=None):
+        """
+        Construct a correction class for the BayesianGPLVM given.
 
+        This correction uses a knn-graph object in order to go along
+        the topslam.
 
-if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()
+        All evaluations on this object are lazy, so do not change attributes
+        at runtime in order to have a consistent model.
+
+        You can add the minimal spanning tree in, in order to
+        ensure a fully connected graph. This only adds edges which are not already there,
+        so that the connections are made.
+
+        :param [GPy.models.BayesianGPLVM,GPy.models.GPLVM] gplvm:
+            an optimized GPLVM or BayesianGPLVM model from GPy
+        :param int k: number of neighbours to use for this knn-graph correction
+        :param bool include_mst: whether to include the mst into the knn-graph [default: True]
+        :param func dist: dist(X,G), the distance to use for pairwise distances
+            in X using the topslam embedding G
+        """
+        super(ManifoldCorrectionTree, self).__init__(gplvm, distance, dimensions=dimensions)
+
+    @property
+    def graph(self):
+        return self.minimal_spanning_tree

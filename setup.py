@@ -56,25 +56,25 @@ def read_to_rst(fname):
 desc = read('README.md')
 
 version_dummy = {}
-exec(read('cellSLAM/__version__.py'), version_dummy)
+exec(read('topslam/__version__.py'), version_dummy)
 __version__ = version_dummy['__version__']
 del version_dummy
 
-setup(name = 'cellSLAM',
+setup(name = 'topslam',
       version = __version__,
       author = "Max Zwiessele",
       author_email = "ibinbei@gmail.com",
-      description = ("cellSLAM metric and correction techniques for (Bayesian) GPLVM"),
+      description = ("topslam metric and correction techniques for (Bayesian) GPLVM"),
       long_description=desc,
       license = "BSD 3-clause",
       keywords = "machine-learning gaussian-processes kernels",
-      url = "https://github.com/mzwiessele/cellSLAM",
+      url = "https://github.com/mzwiessele/topslam",
       #packages = ["cellSLAM",
       #            "cellSLAM/tests"
       #            "cellSLAM/simulation"
       #            ],
-      package_dir={'cellSLAM': 'cellSLAM'},
-      py_modules = ['cellSLAM.__init__'],
+      package_dir={'topslam': 'topslam'},
+      py_modules = ['topslam.__init__'],
       #test_suite = 'cellSLAM.tests',
       install_requires=['GPy>=1', 'scikit-learn', 'pandas', 'pods', 'seaborn', 'adjustText'],
       classifiers=['License :: OSI Approved :: BSD License',

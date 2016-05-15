@@ -12,7 +12,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of cellSLAM nor the names of its
+# * Neither the name of topslam nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
@@ -28,17 +28,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from .distance_correction import ManifoldCorrection
-from . import distances
+from topslam import ManifoldCorrectiontopslamfrom . import distances
+import numpy as np
+from scipy.sparse.lil import lil_matrix
+from scipy.sparse.extract import find
 
-class ManifoldCorrectionTree(ManifoldCorrection):
-
-    def __init__(self, gplvm, distance=distances.mean_embedding_dist, dimensions=None):
+class ManifoldCorrectionKNN(ManifoldCorrection):
+    def __init__(self, gplvm, k, include_mst=True, distance=distances.mean_embedding_dist, dimensions=None):
         """
         Construct a correction class for the BayesianGPLVM given.
 
         This correction uses a knn-graph object in order to go along
-        the cellSLAM.
+        the topslam.
 
         All evaluations on this object are lazy, so do not change attributes
         at runtime in order to have a consistent model.
@@ -52,10 +53,31 @@ class ManifoldCorrectionTree(ManifoldCorrection):
         :param int k: number of neighbours to use for this knn-graph correction
         :param bool include_mst: whether to include the mst into the knn-graph [default: True]
         :param func dist: dist(X,G), the distance to use for pairwise distances
-            in X using the cellSLAM embedding G
+            in X using the topslam embedding G
         """
-        super(ManifoldCorrectionTree, self).__init__(gplvm, distance, dimensions=dimensions)
+        self.k = k
+        self.include_mst = include_mst
+        super(ManifoldCorrectionKNN, self).__init__(gplvm, distance, dimensions=dimensions)
 
     @property
     def graph(self):
-        return self.minimal_spanning_tree
+        """
+        Return the k-nearest-neighbour graph with self.k neighbours.
+
+        Optionally the minimum_spanning_tree is added in, according to
+        self.include_mst.
+        """
+        if getattr(self, '_graph', None) is None:
+            D = self.manifold_corrected_distance_matrix.toarray()
+            idxs = np.argsort(D)
+            r = range(D.shape[0])
+            idx = idxs[:, :self.k]
+            self._graph = lil_matrix(D.shape)
+            for neighbours in idx.T:
+                self._graph[r, neighbours] = D[r, neighbours]
+            if self.include_mst:
+                mst = self.minimal_spanning_tree
+                for i,j,v in zip(*find(mst)):
+                    if self._graph[i,j] == 0:
+                        self._graph[i,j] = v
+        return self._graph

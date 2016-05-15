@@ -12,7 +12,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 # 
-# * Neither the name of cellSLAM nor the names of its
+# * Neither the name of topslam nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 # 
@@ -27,14 +27,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
-from cellSLAM.plotting import plot_comparison
-from cellSLAM.pseudo_time.tree_correction import ManifoldCorrectionTree
+from topslam.plotting import plot_comparison
+from topslam.pseudo_time.tree_correction import ManifoldCorrectionTree
 
 
 def example_deng(optimize=True, plot=True):
     import pandas as pd, os
     import GPy, numpy as np
-    from .filtering import filter_RNASeq
+    from topslam import filter_RNASeq
     # Reproduceability, BGPLVM has local optima
     np.random.seed(42)
     
@@ -135,7 +135,7 @@ def example_deng(optimize=True, plot=True):
         if nlab not in short_ulabels:
             short_ulabels.append(nlab)
     
-    from .optimization import run_methods, methods, create_model, optimize_model
+    from topslam import run_methods, methods, create_model, optimize_model
     X_init, dims = run_methods(Y_m, methods)
     
     m = create_model(Y_m, X_init, num_inducing=25)

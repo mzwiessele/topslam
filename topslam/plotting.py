@@ -12,7 +12,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 # 
-# * Neither the name of cellSLAM.plotting nor the names of its
+# * Neither the name of topslam.plotting nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 # 
@@ -31,7 +31,7 @@
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import squareform
 import numpy as np
-from cellSLAM.pseudo_time.distance_correction import _get_label_pos, _get_colors
+from topslam.pseudo_time.distance_correction import _get_label_pos, _get_colors
 from GPy.plotting.gpy_plot.plot_util import find_best_layout_for_subplots
 
 def plot_dist_hist(M, ax=None):
@@ -89,7 +89,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
 
     #ax.set_xlabel('')
     #ax.set_ylabel('')
-    ax.text(0.01,.98,"cellSLAM",va='top',transform=ax.transAxes,color='w')
+    ax.text(0.01,.98,"topslam",va='top',transform=ax.transAxes,color='w')
 
     pt = mc.get_pseudo_time(start=start)
     import itertools

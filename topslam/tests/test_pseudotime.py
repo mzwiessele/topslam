@@ -12,7 +12,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 # 
-# * Neither the name of cellSLAM.simulation.__init__ nor the names of its
+# * Neither the name of topslam nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 # 
@@ -28,4 +28,33 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from .simulate_trajectory import simulate_latent_space, simulate_new_Y, guo_simulation
+import unittest, numpy as np, GPy
+
+class Test(unittest.TestCase):
+    def setUp(self):
+        from topslam.simulation.simulate_trajectory import make_cell_division_times, simulate_latent_space, simulate_new_Y
+        seed = 1234
+        n_divisions = 6
+        p_dims = 2000
+        
+        t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
+        c = np.log2(labels) / n_divisions
+        #c = t
+        xvar = .3
+        Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+        Y = simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.3)
+        
+        self.t = t
+        self.X = Xsim
+        np.random.seed(42)
+        self.Y = Y
+        
+        
+
+    def testName(self):
+        pass
+
+
+if __name__ == "__main__":
+    #import sys;sys.argv = ['', 'Test.testName']
+    unittest.main()

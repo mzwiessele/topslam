@@ -12,7 +12,7 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of cellSLAM nor the names of its
+# * Neither the name of topslam nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
@@ -32,8 +32,8 @@ from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.sparse import find, lil_matrix
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist, squareform
-from .distances import mean_embedding_dist
-from ..landscape import waddington_landscape
+from topslam import mean_embedding_dist
+from topslam import waddington_landscape
 
 import matplotlib.pyplot as plt
 
@@ -50,7 +50,7 @@ class ManifoldCorrection(object):
         :param [GPy.models.BayesianGPLVM,GPy.models.GPLVM] gplvm:
             an optimized GPLVM or BayesianGPLVM model from GPy
         :param func dist: dist(X,G), the distance to use for pairwise distances
-            in X using the cellSLAM embedding G
+            in X using the topslam embedding G
         :param array-like dimensions: The dimensions of the latent space to use [default: self.gplvm.get_most_significant_input_dimensions()[:2]]
         """
         self.gplvm = gplvm
@@ -88,7 +88,7 @@ class ManifoldCorrection(object):
     def manifold_corrected_distance_matrix(self):
         """
         Returns the distances between all pairs of inputs, corrected for
-        the cellSLAM embedding.
+        the topslam embedding.
         """
         if getattr(self, '_M', None) is None:
             self._M = lil_matrix(self.distance(self.Xgplvm, self.G))
@@ -99,7 +99,7 @@ class ManifoldCorrection(object):
         """
         Create a minimal spanning tree using the distance correction method given.
 
-        You can explore different distance corrections in cellSLAM.pseudo_time.distances.
+        You can explore different distance corrections in topslam.pseudo_time.distances.
         """
         if getattr(self, '_mst', None) is None:
             self._mst = minimum_spanning_tree(self.manifold_corrected_distance_matrix)
@@ -108,7 +108,7 @@ class ManifoldCorrection(object):
     @property
     def graph(self):
         """
-        Return the correction graph to use for this cellSLAM correction object.
+        Return the correction graph to use for this topslam correction object.
         """
         raise NotImplemented("Implement the graph extraction property for this class")
 
@@ -155,7 +155,7 @@ class ManifoldCorrection(object):
         hops to make in order to get from one point to another.
 
         This can be very helpful in doing structure analysis
-        and clustering of the cellSLAM embedded data points.
+        and clustering of the topslam embedded data points.
 
         returns hops, the pairwise number of hops between points along the tree.
         """
@@ -167,7 +167,7 @@ class ManifoldCorrection(object):
     def linkage_in_structure(self):
         """
         Return the UPGMA linkage matrix based on the correlation structure of
-        the cellSLAM embedding MST
+        the topslam embedding MST
         """
         if getattr(self, '_struct_linkage', None) is None:
             self._struct_linkage = average(pdist(self.distances_in_structure, metric='correlation'))
@@ -228,7 +228,7 @@ class ManifoldCorrection(object):
     
     def get_pseudo_time(self, start, estimate_direction=True):
         """
-        Returns the pseudo times along the tree correction of the cellSLAM
+        Returns the pseudo times along the tree correction of the topslam
         for the given starting point `start` to all other points (including `start`).
 
         If the starting point is not a leaf, we will select a direction try
