@@ -31,7 +31,7 @@
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import squareform
 import numpy as np
-from topslam.pseudo_time.distance_correction import _get_label_pos, _get_colors
+from .pseudo_time.distance_correction import _get_label_pos, _get_colors
 from GPy.plotting.gpy_plot.plot_util import find_best_layout_for_subplots
 
 def plot_dist_hist(M, ax=None):

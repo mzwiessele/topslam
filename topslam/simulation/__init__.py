@@ -28,4 +28,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from topslam import simulate_latent_space, simulate_new_Y, guo_simulation
+from .simulate_trajectory import simulate_latent_space, simulate_new_Y, guo_simulation

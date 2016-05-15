@@ -28,7 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-from topslam import ManifoldCorrectiontopslamfrom . import distances
+from .distance_correction import ManifoldCorrection
+from . import distances
 
 class ManifoldCorrectionTree(ManifoldCorrection):
 

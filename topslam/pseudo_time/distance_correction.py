@@ -32,8 +32,8 @@ from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
 from scipy.sparse import find, lil_matrix
 from scipy.cluster.hierarchy import average, fcluster, dendrogram
 from scipy.spatial.distance import pdist, squareform
-from topslam import mean_embedding_dist
-from topslam import waddington_landscape
+from .distances import mean_embedding_dist
+from ..landscape import waddington_landscape
 
 import matplotlib.pyplot as plt
 
