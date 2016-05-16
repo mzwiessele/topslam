@@ -41,26 +41,36 @@ def plot_dist_hist(M, ax=None):
     D = np.einsum('ijq,ijq->ij',d_m,d_m)
     _ = ax.hist(squareform(D), bins=200)
 
-def plot_landscape_other(X, pt, labels, ulabels, ax=None, cmap='magma', cmap_index=None, box=True, 
-                         text_kwargs=None, adjust=True, 
+def plot_labels_other(X, pt, labels, ulabels, ax=None, cmap='magma', 
+                      box=True,
+                      adjust=True, 
                          adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
                                                             fc=".6", ec="none",
                                                             ),
-                                            ha='center', va='center', force_text=.5, precision=.5),
-                         **scatter_kwargs):
+                                            ha='center', va='center', force_text=.5, precision=.5),**text_kwargs):
+    """
+    Plot the labels ontop of the figure.
+    
+    :param array_like X: two dimensional array for cell positions in landscape.
+    :param array_like pt: one dimensional array for pseudotime assignments.
+    :param array_like labels: the labels for the cells.
+    :param array_like ulabels: the unique labels, for ordering of labels.
+    :param axis ax: the matplotlib axis to plot on.
+    :param str cmap: the colormap to use for the cells.
+    :param bool box: whether to plot a box around the label.
+    :param bool adjust: whether to move labels around to not overlap.
+    :param dict adjust_kwargs: the keyword arguments to pass to adjust_text
+    :param dict text_kwargs: keyword arguments to pass on to ax.text
+    """
     if ax is None:
         _, ax = plt.subplots()
     label_pos, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
-    colors = _get_colors(cmap, col, mi, ma, cmap_index)
-    marker = itertools.cycle('<>sd^')
+    colors = _get_colors(cmap, col, mi, ma, None)
     texts = []
     for l in ulabels:
         #c = Tango.nextMedium()
         c, r = colors[l]
         p = label_pos[l]
-        fil = (labels==l)
-        ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', 
-                   marker=next(marker), label=l, **scatter_kwargs)
         rgbc = c#[_c/255. for _c in Tango.hex2rgb(c)]
         if r <.5:
             ec = 'w'
@@ -77,8 +87,60 @@ def plot_landscape_other(X, pt, labels, ulabels, ax=None, cmap='magma', cmap_ind
     x1, y1 = np.mgrid[xlim[0]:xlim[1]:100j,ylim[0]:ylim[1]:2j]
     x2, y2 = np.mgrid[xlim[0]:xlim[1]:2j,ylim[0]:ylim[1]:100j]
     x, y = np.r_[x1[:,0], x2[1], x1[::-1,1], x2[0]], np.r_[y1[:,0], y2[1], y1[:,1], y2[0,::-1]]
-    from adjustText import adjust_text
-    adjust_text(texts, x, y, ax=ax, **adjust_kwargs)
+    if adjust:
+        from adjustText import adjust_text
+        adjust_text(texts, x, y, ax=ax, **adjust_kwargs)
+    return ax
+
+def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma', cmap_index=None,  
+                         coloring='labels', **scatter_kwargs):
+    """
+    Plot the scatter plot for a landscape.
+    
+    :param array_like X: two dimensional array for cell positions in landscape.
+    :param array_like pt: one dimensional array for pseudotime assignments.
+    :param array_like labels: the labels for the cells.
+    :param array_like ulabels: the unique labels, for ordering of labels.
+    :param axis ax: the matplotlib axis to plot on.
+    :param str cmap: the colormap to use for the cells.
+    :param int cmap_index: if we choose no labels, which index on the colormap to use for the one color.
+    :param str coloring: one of {labels, time}. Indicates what colors to use for the cells, either by label, or by time. 
+    """
+    if ax is None:
+        _, ax = plt.subplots()
+    _, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
+    
+    marker = itertools.cycle('<>sd^')
+    
+    if labels is None:
+        labels = np.zeros(X.shape[0])
+        legend = False
+        ulabels = np.zeros(1)
+    elif ulabels is None:
+        ulabels = []
+        for l in labels: 
+            if l not in ulabels: ulabels.append(l)
+        ulabels = np.asarray(ulabels)
+        legend = True
+    else:
+        legend = True
+
+    if coloring in 'labels':
+        colors = _get_colors(cmap, col, mi, ma, cmap_index)
+    elif coloring in 'time':
+        _cm = plt.get_cmap(cmap)
+        _cm = _cm((pt-mi)/(ma-mi))
+        
+    for l in ulabels:
+        fil = (labels==l)
+        #c = Tango.nextMedium()
+        if coloring in 'labels':
+            c, _ = colors[l]
+            ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', 
+                       marker=next(marker), label=l if legend else None, **scatter_kwargs)
+        elif coloring in 'time':
+            ax.scatter(*X[fil].T, linewidth=.1, facecolor=_cm[fil], alpha=.8, edgecolor='w', 
+                       marker=next(marker), label=l if legend else None, **scatter_kwargs)
     return ax
 
 def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', 
@@ -136,6 +198,9 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma',
     for name in dims:
         ax = next(axit)
         X = X_init[:,dims[name]]
+        plot_landscape_other(X, pt, labels, ulabels, ax, cmap, 
+                             cmap_index, box, text_kwargs, 
+                             adjust, adjust_kwargs, **scatter_kwargs)
         plot_landscape_other(X, pt, labels, ulabels, ax, cmap, 
                              cmap_index, box, text_kwargs, 
                              adjust, adjust_kwargs, **scatter_kwargs)
