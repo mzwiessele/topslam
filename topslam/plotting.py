@@ -108,7 +108,6 @@ def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma'
     """
     if ax is None:
         _, ax = plt.subplots()
-    _, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
     
     marker = itertools.cycle('<>sd^')
     
@@ -125,6 +124,7 @@ def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma'
     else:
         legend = True
 
+    _, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
     if coloring in 'labels':
         colors = _get_colors(cmap, col, mi, ma, cmap_index)
     elif coloring in 'time':
@@ -139,7 +139,7 @@ def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma'
             ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', 
                        marker=next(marker), label=l if legend else None, **scatter_kwargs)
         elif coloring in 'time':
-            ax.scatter(*X[fil].T, linewidth=.1, facecolor=_cm[fil], alpha=.8, edgecolor='w', 
+            ax.scatter(*X[fil].T, linewidth=.1, c=_cm[fil], alpha=.8, edgecolor='w', 
                        marker=next(marker), label=l if legend else None, **scatter_kwargs)
     return ax
 
