@@ -33,6 +33,7 @@ from scipy.spatial.distance import squareform
 import numpy as np, itertools
 from .pseudo_time.distance_correction import _get_label_pos, _get_colors
 from GPy.plotting.gpy_plot.plot_util import find_best_layout_for_subplots
+from matplotlib.collections import PathCollection
 
 def plot_dist_hist(M, ax=None):
     if ax is None:
@@ -131,17 +132,18 @@ def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma'
         _cm = plt.get_cmap(cmap)
         _cm = _cm((pt-mi)/(ma-mi))
         
+    scatters = []
     for l in ulabels:
         fil = (labels==l)
         #c = Tango.nextMedium()
         if coloring in 'labels':
             c, _ = colors[l]
-            ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', 
-                       marker=next(marker), label=l if legend else None, **scatter_kwargs)
+            scatters.append(ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', 
+                       marker=next(marker), label=l if legend else None, **scatter_kwargs))
         elif coloring in 'time':
-            ax.scatter(*X[fil].T, linewidth=.1, c=_cm[fil], alpha=.8, edgecolor='w', 
-                       marker=next(marker), label=l if legend else None, **scatter_kwargs)
-    return ax
+            scatters.append(ax.scatter(*X[fil].T, linewidth=.1, c=_cm[fil], alpha=.8, edgecolor='w', 
+                       marker=next(marker), label=l if legend else None, **scatter_kwargs))
+    return ax, PathCollection(scatters)
 
 def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', 
                     cmap_index=None, box=True, text_kwargs=None, 
