@@ -143,7 +143,9 @@ def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma'
         elif coloring in 'time':
             scatters.append(ax.scatter(*X[fil].T, linewidth=.1, c=_cm[fil], alpha=.8, edgecolor='w', 
                        marker=next(marker), label=l if legend else None, **scatter_kwargs))
-    return ax, PathCollection(scatters)
+        scatters[-1].set_clim([mi, ma])
+
+    return ax, scatters
 
 def plot_comparison(mc, X_init, dims, labels, ulabels, start, cmap='magma', 
                     cmap_index=None, box=True, text_kwargs=None, 
