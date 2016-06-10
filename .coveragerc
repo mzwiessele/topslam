@@ -1,8 +1,8 @@
 # .coveragerc to control coverage.py
 [run]
 branch = True
-source = paramz
-omit = ./paramz/tests/*.py, travis_tests.py, setup.py, ./paramz/__version__.py
+source = topslam
+omit = ./topslam/tests/*.py, travis_tests.py, setup.py, ./topslam/__version__.py
 
 [report]
 # Regexes for lines to exclude from consideration

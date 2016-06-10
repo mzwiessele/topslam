@@ -39,14 +39,21 @@ def plot_dist_hist(M, ax=None):
     if ax is None:
         _, ax = plt.subplots()
     _ = ax.hist(pdist(M, 'sqeuclidean'), bins=200)
+    return ax
 
 def plot_labels_other(X, pt, labels, ulabels=None, ax=None, cmap='magma',
                       box=True,
                       adjust=True,
-                         adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
-                                                            fc=".6", ec="none",
-                                                            ),
-                                            ha='center', va='center', force_text=.5, precision=.5),**text_kwargs):
+                      expand_points=(.3, .3),
+                      adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
+                                            fc=".6", ec="none",
+                                            ),
+                                        ha='center', va='center', 
+                                        force_text=.2, 
+                                        force_points=2., 
+                                        precision=.1),
+                      
+                      **text_kwargs):
     """
     Plot the labels ontop of the figure.
 
@@ -90,13 +97,18 @@ def plot_labels_other(X, pt, labels, ulabels=None, ax=None, cmap='magma',
     if adjust:
         try:
             from adjustText import adjust_text
-            xlim, ylim = ax.get_xlim(), ax.get_ylim()
-            x1, y1 = np.mgrid[xlim[0]:xlim[1]:100j,ylim[0]:ylim[1]:2j]
-            x2, y2 = np.mgrid[xlim[0]:xlim[1]:2j,ylim[0]:ylim[1]:100j]
-            x, y = np.r_[x1[:,0], x2[1], x1[::-1,1], x2[0]], np.r_[y1[:,0], y2[1], y1[:,1], y2[0,::-1]]
-            adjust_text(texts, x, y, ax=ax, **adjust_kwargs)
+            #xlim, ylim = ax.get_xlim(), ax.get_ylim()
+            #x1, y1 = np.mgrid[xlim[0]:xlim[1]:100j,ylim[0]:ylim[1]:2j]
+            #x2, y2 = np.mgrid[xlim[0]:xlim[1]:2j,ylim[0]:ylim[1]:100j]
+            #x, y = np.r_[x1[:,0], x2[1], x1[::-1,1], x2[0]], np.r_[y1[:,0], y2[1], y1[:,1], y2[0,::-1]]
+            #ax.scatter(x,y,c='r')
+            if not 'only_move' in adjust_kwargs:
+                adjust_text(texts, ax=ax, **adjust_kwargs)
+            else:
+                adjust_text(texts, ax=ax, **adjust_kwargs)
         except ImportError:
             print("Could not find adjustText package, resuming without adjusting")
+    ax.autoscale()
     return ax
 
 def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma', cmap_index=None,
@@ -151,7 +163,8 @@ def plot_landscape_other(X, pt, labels=None, ulabels=None, ax=None, cmap='magma'
                        marker=next(marker), label=l if legend else None, **scatter_kwargs))
         scatters[-1].set_clim([mi, ma])
 
-    return ax, scatters
+    ax.autoscale(tight=True)
+    return ax
 
 def plot_comparison(mc, X_init, dims, labels, ulabels, start,
                     landscape_kwargs={},
@@ -176,7 +189,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start,
     fig = plt.figure(figsize=(10,5))
 
     rows, cols = find_best_layout_for_subplots(len(dims)+1)
-    gs = plt.GridSpec(rows,cols)
+    gs = plt.GridSpec(rows,cols, wspace=0, hspace=0, left=0, bottom=0, right=1, top=1)
     axes = np.empty((rows,cols), object)
 
     for r in range(rows):
@@ -213,21 +226,34 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start,
 
     #ax.set_xlabel('')
     #ax.set_ylabel('')
-    ax.text(0.01,.98,"topslam",va='top',transform=ax.transAxes,color='w')
+    ax.text(0.,1.,"topslam",va='top',transform=ax.transAxes,color='k',bbox=dict(facecolor='.1', alpha=.1, edgecolor='none', pad=0))
 
     pt = mc.get_pseudo_time(start=start)
 
-    i = 0
     for name in dims:
         ax = next(axit)
         X = X_init[:,dims[name]]
         plot_landscape_other(X, pt, labels=labels, ulabels=ulabels, ax=ax, **graph_node_kwargs)
-        plot_labels_other(X, pt, labels, ulabels, ax, **graph_label_kwargs)
-        i += 2
-
-
-    try:
-        fig.tight_layout(pad=0)
-    except:
-        print("Plot Warning: Tight layout failed, continueing without")
-    return fig, axes
+        plot_labels_other(X, pt, labels, ulabels, ax, 
+                          #adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
+                          #                  fc=".6", ec="none",
+                          #                  ),
+                          #              ha='left', va='top', 
+                          #              #force_text=.1,
+                          #              #only_move={'points':'y', 'text':'y'}, 
+                          #              force_points=.1,
+                          #              expand_text=(1.5,1.5),
+                          #              expand_points=(1.5,1.5),
+                          #              #text_from_points=False,
+                          #              lim=int(5e3),
+                          #              precision=-np.inf, 
+                          #              save_steps=False, 
+                          #              save_prefix='{}_'.format(name)), 
+                          **graph_label_kwargs)
+        ax.text(0.,1.,name,va='top',transform=ax.transAxes,color='k',bbox=dict(boxstyle="square",facecolor='.1', alpha=.1, edgecolor='none', pad=0))
+        ax.autoscale(tight=True)
+    #try:
+    #    fig.tight_layout(pad=0)
+    #except:
+    #    print("Plot Warning: Tight layout failed, continueing without")
+    return axes

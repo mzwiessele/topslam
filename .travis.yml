@@ -25,7 +25,7 @@ before_install:
 install:
 - echo $PATH
 - source install_retry.sh
-- conda install --yes scikit-learn pandas seaborn
+- conda install --yes scikit-learn pandas seaborn networkx
 - pip install codecov pods adjustText
 - python setup.py develop
 

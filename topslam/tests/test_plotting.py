@@ -122,7 +122,7 @@ def compare_axis_dicts(x, y, decimal=6):
 extensions = ['npz']
 
 
-def test_waddington():
+def test_topslam():
     np.random.seed(111)
     import matplotlib
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
@@ -174,6 +174,59 @@ def test_waddington():
                                                                                            "time_tree_labels",
                                                                                            'graph_nodes_labels_nobox_noadjust',
                                                                                            'graph_nodes_nolabs_box_adjust']
+                                                      ], extensions=extensions):
+        yield do_test
+        
+        
+def test_other():
+    np.random.seed(111)
+    import matplotlib
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    #matplotlib.rcParams[u'figure.figsize'] = (4,3)
+    matplotlib.rcParams[u'text.usetex'] = False
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        #from topslam.simulation.simulate_trajectory import qpcr_simulation
+
+        #Xsim, simulate_new, t, c, labels, seed = qpcr_simulation(48, 6, 5001)
+
+        #np.random.seed(3)
+        #Y = simulate_new()
+
+        #m = GPy.models.BayesianGPLVM(Y, 2, X=Xsim, num_inducing=25)
+        #m.optimize()
+
+        try:
+            test_data = np.load(os.path.join(basedir, 'test_data_model.npz'))
+            test_init = np.load(os.path.join(basedir, 'test_data_others.npz'))
+        except IOError:
+            raise #SkipTest('not installed by source, skipping plotting tests')
+        labels = test_data['labels']
+        dims = test_init['dims'].tolist()
+        X_init = test_init['X_init']
+        
+        m = GPy.models.BayesianGPLVM(test_data['Y'].copy(), 2, num_inducing=25, initialize=False)
+        m.param_array[:] = test_data['model_params']
+        m.initialize_parameter()
+
+        from topslam import ManifoldCorrectionKNN
+        mc = ManifoldCorrectionKNN(m, 10)
+
+        from topslam.plotting import plot_comparison, plot_dist_hist, plot_labels_other, plot_landscape_other
+        plot_comparison(mc, X_init, dims, labels, np.unique(labels), 0)
+
+        plot_dist_hist(test_data['Y'])
+        
+        X, pt = X_init[:, dims['t-SNE']], test_data['t']
+        ax = plot_landscape_other(X, pt, labels)
+        plot_labels_other(X, pt, labels, ax=ax)
+
+    for do_test in _image_comparison(baseline_images=['other_{}'.format(sub) for sub in ["comparison",
+                                                                                           "dist_hist",
+                                                                                           "landscape_labs",
+                                                                                           ]
                                                       ], extensions=extensions):
         yield do_test
 if __name__ == "__main__":
