@@ -1,6 +1,7 @@
 # topslam
 
-[![Build Status](https://travis-ci.org/mzwiessele/manifold.svg?branch=master)](https://travis-ci.org/mzwiessele/manifold) [![codecov.io](http://codecov.io/github/mzwiessele/manifold/coverage.svg?branch=master)](http://codecov.io/github/mzwiessele/manifold?branch=master)
+[![Build Status](https://travis-ci.org/mzwiessele/topslam.svg?branch=master)](https://travis-ci.org/mzwiessele/topslam)
+[![codecov.io](http://codecov.io/github/mzwiessele/manifold/coverage.svg?branch=master)](http://codecov.io/github/mzwiessele/manifold?branch=master)
 
 Extracting and using probabilistic Waddington's landscape recreation from single cell gene expression measurements.
 
