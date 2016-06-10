@@ -4,6 +4,19 @@ import numpy as np
 def make_cell_division_times(n_divisions, n_replicates=8, std=.1, seed=None, drop_p=.05, maxtime=10):
     """
     Simulate Cell division times for n_divisions. The division times are drawn between 0 and maxtime.
+
+    Dropout events are simulated for cells to be dropped due to technical variance.
+
+    Cell stages increase exponentially (*2) for each cell division.
+
+    The first cell stage cannot have dropout events.
+
+    :param n_divisions: number of divions the cells do.
+    :param n_replicates: number of cells in the beginning.
+    :param std: amount of noise (in standard deviation) to add.
+    :param seed: seed for reproduceability.
+    :param drop_p: drop probability for each cell after first cell stage.
+    :param maxtime: the end point in time.
     """
     seed = seed or np.random.randint(1000,10000)
     np.random.seed(seed)
@@ -65,25 +78,48 @@ import GPy
 from GPy.util import diag
 from scipy.stats import norm
 
-def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
-    # t needs to be sorted!
+def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1, gap=.75):
+    """
+    Simulate splitting events in the latent space. The input time t is
+    a one dimensional array having the times in it. The labels is a int
+    array-like, which holds the labels for the wanted cell types.
+    Basically it is an array of repetitions of 1 to number of cell types,
+    e.g.: array([1..1,2..2,3..3,4..4]) for 4 cell types.
+
+    :param array_like t: the time as [nx1] array, where n is the number of cells.
+    :param array_like labels: the labels for the cells before splitting.
+    :param int seed: the seed for this splitting, for reproducability.
+    :param scalar var: the variance of spread of the first split, increasing after that.
+    :param [0,1] split_prop: probability of split in the beginning, halfs with each split.
+    :param [0,1] gap: the gap size between splitends and the beginning of the next.
+
+    The method returns Xsim, seed, labels, time::
+
+        - Xsim is the two dimensional latent space with splits included.
+        - seed is the seed generated, for reproduceability.
+        - labels are the corrected labels, for split events.
+        - time is the corrected timeline for split events.
+    """
     seed = seed or np.random.randint(1000,10000)
     np.random.seed(seed)
 
     n_data = t.shape[0]
-
-    ulabs = [labels[0]]
-
     newlabs = []
 
+    assert np.issubdtype(labels.dtype, np.int_) and np.greater(labels, 0).all(), "labels need to be of positive integer dtype, 0 is not allowed"
+
+    ulabs = []
     for x in range(n_data):
-        if labels[x] != ulabs[-1]:
+        if labels[x] not in ulabs:
             ulabs.append(labels[x])
 
     Xsim = np.zeros((n_data, 2))
     split_ends = [Xsim[0]]
     prev_ms = [[.1,.1]]
-    split_end_times = [t[labels==ulabs[0].max()]]
+    split_end_times = [t[labels==ulabs[0]].max()]
+
+    t = np.sort(t.copy(), 0)
+
     tmax = t.max()
 
     for lab in ulabs:
@@ -115,7 +151,10 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
                 else:
                     t[split.min():] -= prev_split_time
                 t[split] -= (t[split.min()]-split_end_time)
-                x = t[split]
+
+                # make splits longer, the farther in we are into
+                # the split process, it scales with sqrt(<split#>)
+                x = t[split].copy()
                 x -= x.min()
                 x /= x.max()
                 x *= np.sqrt(lab)
@@ -129,17 +168,21 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
                 rot_m = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
                 m = np.dot(rot_m, prev_m)
 
-                #print (m*x).shape, m, x.shape, Xsim[split].shape
+                # later splits have bigger spread:
                 v = (x.mean(0) - np.abs((-x+x.mean(0))))
                 v -= v.min(0)-1e-6
                 v /= v.max(0)
                 v *= var*t[split]/tmax
 
+                # make the split
                 Xsim[split] = np.random.normal(split_end + m*x, v)
-                #new_se.append(np.percentile(Xsim[split], 100, 0))
-                p = (m*x[-1])
-                p /= 4*np.sqrt(GPy.util.linalg.tdot(p))
-                new_se.append(split_end + (m*x[-1]) + p)
+
+                # put a gap between this and the next split:
+                p = m*x[-1]
+                #p /= np.sqrt(GPy.util.linalg.tdot(p))
+
+                # save the new sets of splits
+                new_se.append(split_end + (1+gap)*p)
                 new_m.append(m)
                 new_set.append(t[split.max()])
 
@@ -154,9 +197,40 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1):
     Xsim /= Xsim.std(0)
     #Xsim += np.random.normal(0,var,Xsim.shape)
 
-    return Xsim, seed, np.asarray(newlabs)
+    from scipy.stats import t as tdist
+    Xsim += tdist.rvs(3, loc=0, scale=.1*var, size=Xsim.shape) #Add outliers
 
-def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
+
+    return Xsim, seed, np.asarray(newlabs), t
+
+def simulate_new_Y_RNAseq(Xsim, t, p_dims,
+                          num_classes=10,
+                          noise_var=.2):
+    n_data = Xsim.shape[0]
+    Y = np.empty((n_data, p_dims))
+
+    splits = np.random.choice(p_dims, replace=False, size=num_classes)
+    splits.sort()
+
+    #for sub in np.array_split(range(p_dims), splits):
+    for sub in np.array_split(range(p_dims), splits):
+        ky_sim = (GPy.kern.RBF(1, variance=1e-8, lengthscale=5, active_dims=[2]) # switch time info off (variance of 1e-8)
+                  + GPy.kern.Linear(2, variances=np.random.uniform(3, 5)) # Linear contribution
+                  + GPy.kern.Matern32(2, ARD=True, variance=np.random.uniform(4, 6), lengthscale=np.random.uniform(20,25, size=2)) # long-term
+                  + GPy.kern.Matern32(2, ARD=True, variance=np.random.uniform(40, 60), lengthscale=np.random.uniform(6,7, size=2)) # mid term
+                  + GPy.kern.Matern32(2, ARD=True, variance=np.random.uniform(1, 2), lengthscale=np.random.uniform(1,2, size=2)) # short term
+                  #+ GPy.kern.LogisticBasisFuncKernel(2, np.random.uniform(0,10), variance=1, slope=1, active_dims=[1,2])
+                  #+ GPy.kern.White(3,variance=noise_var)
+                  )
+        Ky_sim = ky_sim.K(np.c_[Xsim, t])
+        Y[:, sub] = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, 5).T.dot(np.random.normal(0,1,(5, sub.size)))
+    #Ky_sim = ky_sim.K(np.c_[Xsim, t])
+    #Y = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, p_dims).T
+    Y -= Y.mean(0)
+    Y /= Y.std(0)
+    return np.random.normal(Y, np.sqrt(noise_var))
+
+def simulate_new_Y_qPCR(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     n_data = Xsim.shape[0]
     Y = np.empty((n_data, p_dims))
 
@@ -166,11 +240,11 @@ def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     #for sub in np.array_split(range(p_dims), splits):
     for sub in np.array_split(range(p_dims), splits):
         ky_sim = (GPy.kern.RBF(1, variance=1e-6, lengthscale=5, active_dims=[2])
-                  + GPy.kern.RBF(2, variance=.4, lengthscale=.7)
-                  + GPy.kern.Linear(2, variances=.1)
-                  + GPy.kern.RBF(2, ARD=True, variance=1, lengthscale=[9,5])
+                  + GPy.kern.RBF(2, variance=.4, lengthscale=np.random.uniform(.5,.9))
+                  + GPy.kern.Linear(2, variances=np.random.uniform(.08, .15))
+                  + GPy.kern.RBF(2, ARD=True, variance=1, lengthscale=np.random.uniform(4,10, size=2))
                   #+ GPy.kern.LogisticBasisFuncKernel(2, np.random.uniform(0,10), variance=1, slope=1, active_dims=[1,2])
-                  + GPy.kern.White(3,variance=(noise_var)**2)
+                  + GPy.kern.White(3,variance=noise_var)
                   )
         Ky_sim = ky_sim.K(np.c_[Xsim, t])
         Y[:, sub] = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, 2).T.dot(np.random.normal(0,1,(2, sub.size)))
@@ -180,43 +254,35 @@ def simulate_new_Y(Xsim, t, p_dims, num_classes=10,noise_var=.2):
     Y /= Y.std(0)
     return Y
 
-def simulate_new_Y_old(Xsim, t, p_dims, num_classes=10,noise_var=.2):
-    n_data = Xsim.shape[0]
-    Y = np.empty((n_data, p_dims))
-
-    splits = np.random.choice(p_dims, replace=False, size=num_classes)
-    splits.sort()
-
-    for sub in np.array_split(range(p_dims), splits):
-        ky_sim = (GPy.kern.RBF(1, variance=1., lengthscale=5, active_dims=[2])
-                  + GPy.kern.RBF(2, variance=1., lengthscale=.7)
-                  + GPy.kern.Linear(2, variances=.01)
-                  + GPy.kern.RBF(2, ARD=True, variance=1, lengthscale=[np.random.uniform(5,7),np.random.uniform(3,5)])
-                  #+ GPy.kern.LogisticBasisFuncKernel(2, np.random.uniform(0,10), variance=1, slope=1, active_dims=[1,2])
-                  + GPy.kern.White(3,variance=(noise_var)**2)
-                  )
-        Ky_sim = ky_sim.K(np.c_[Xsim, t])
-        Y[:, sub] = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, 2).T.dot(np.random.normal(0,1,(2, sub.size)))
-    Y -= Y.mean(0)
-    Y /= Y.std(0)
-    return Y
-
-def guo_simulation(p_dims=48, n_divisions=6, seed=None):
+def qpcr_simulation(p_genes=48, n_divisions=6, seed=None):
     t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.01, drop_p=.6)
     c = np.log2(labels) / n_divisions
     #c = t
-    xvar = 1
-    Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+    xvar = .7
+    Xsim, seed, labels, t = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01, gap=1.5)
     def simulate_new():
-        return simulate_new_Y(Xsim, t, 48, num_classes=48, noise_var=.37)
+        return simulate_new_Y_qPCR(Xsim, t, p_genes, num_classes=48, noise_var=.2)
     return Xsim, simulate_new, t, c, labels, seed
 
-def guo_simulation_old(p_dims=48, n_divisions=6, seed=None):
-    t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
+guo_simulation = qpcr_simulation
+
+
+def rnaseq_simulation(p_genes=220, n_divisions=6, seed=None):
+    t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.05, drop_p=.6)
     c = np.log2(labels) / n_divisions
     #c = t
-    xvar = .6
-    Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+    xvar = 1.
+    Xsim, seed, labels, t = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01, gap=1.)
     def simulate_new():
-        return simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.7)
+        return simulate_new_Y_RNAseq(Xsim, t, p_genes, num_classes=100, noise_var=.2)
     return Xsim, simulate_new, t, c, labels, seed
+
+# def guo_simulation_old(p_dims=48, n_divisions=6, seed=None):
+#     t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
+#     c = np.log2(labels) / n_divisions
+#     #c = t
+#     xvar = .6
+#     Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
+#     def simulate_new():
+#         return simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.7)
+#     return Xsim, simulate_new, t, c, labels, seed

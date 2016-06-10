@@ -8,13 +8,14 @@ from matplotlib import cbook, pyplot as plt
 from nose import SkipTest
 
 extensions = ['npz']
+basedir = os.path.dirname(os.path.relpath(os.path.abspath(__file__)))
+
 
 def _image_directories():
     """
     Compute the baseline and result image directories for testing *func*.
     Create the result directory if it doesn't exist.
     """
-    basedir = os.path.dirname(os.path.relpath(os.path.abspath(__file__)))
     #module_name = __init__.__module__
     #mods = module_name.split('.')
     #basedir = os.path.join(*mods)
@@ -142,9 +143,9 @@ def test_waddington():
         #m.optimize()
 
         try:
-            test_data = np.load('test_data_model.npz')
+            test_data = np.load(os.path.join(basedir, 'test_data_model.npz'))
         except IOError:
-            raise SkipTest('not installed by source, skipping plotting tests')
+            raise #SkipTest('not installed by source, skipping plotting tests')
         labels = test_data['labels']
 
         m = GPy.models.BayesianGPLVM(test_data['Y'].copy(), 2, num_inducing=25, initialize=False)
@@ -155,19 +156,24 @@ def test_waddington():
         from topslam import ManifoldCorrectionKNN
         mc = ManifoldCorrectionKNN(m, 10)
 
-        mc.plot_waddington_landscape()
+        ax = mc.plot_waddington_landscape()
+        mc.plot_graph_nodes(ax=ax)
+
         mc.plot_time_graph()
+
         mc.plot_time_graph(labels)
-        mc.plot_graph_nodes()
+
         ax = mc.plot_graph_nodes(labels)
         mc.plot_graph_labels(labels, ax=ax, adjust=False, box=False)
+
         ax = mc.plot_graph_nodes()
         mc.plot_graph_labels(labels, ax=ax, adjust=True, box=True)
-    for do_test in _image_comparison(baseline_images=['topslam_{}'.format(sub) for sub in ["waddington", "time_tree_no_lab",
+
+    for do_test in _image_comparison(baseline_images=['topslam_{}'.format(sub) for sub in ["waddington_nodes",
+                                                                                           "time_tree_no_lab",
                                                                                            "time_tree_labels",
-                                                                                           'graph_nodes_nolabs',
-                                                                                           'graph_nodes_nobox_noadjust',
-                                                                                           'graph_nodes_box_adjust']
+                                                                                           'graph_nodes_labels_nobox_noadjust',
+                                                                                           'graph_nodes_nolabs_box_adjust']
                                                       ], extensions=extensions):
         yield do_test
 if __name__ == "__main__":

@@ -33,36 +33,43 @@ import GPy
 import numpy as np
 
 def distance_matrix(X):
+    """
+    Compute the pairwise distance matrix of X with itself.
+    """
     return (X[:,None]-X[None, :])
 
-def _distance_G(dM, G):
-    tmp = GPy.util.linalg.tdot(G)
-    sdist = np.einsum('ijp,ijq,ipqj->ij', dM, dM, tmp)
-    return sdist#, 1./2.)
-
-def _distance(dM):
-    return np.einsum('ijp,ijp->ij', dM, dM)#, 1./2.)
-
-def _multi_chol(G):
-    chols = np.empty(G.shape)
-    for i in range(G.shape[0]):
-        chols[i] = GPy.util.linalg.jitchol(G[i])
-    return chols
-
-def cholesky_dist(X, G):
-    """
-    first product cholesky on vector, then take distance
-    """
-    chols = _multi_chol(G)
-    distM = np.einsum('iq,iqp->ip',X,chols)
-    return np.power(_distance(distance_matrix(distM)), 1./2.)
-
-def cholesky_dist_product(X, G):
-    """first take distance, then product onto cholesky"""
-    chols = _multi_chol(G)
-    return np.power(np.abs(_distance_G((distance_matrix(X)), chols)), 1./2.)
+# def _distance_G(dM, G):
+#     tmp = GPy.util.linalg.tdot(G)
+#     sdist = np.einsum('ijp,ijq,ipqj->ij', dM, dM, tmp)
+#     return sdist#, 1./2.)
+#
+# def _distance(dM):
+#     return np.einsum('ijp,ijp->ij', dM, dM)#, 1./2.)
+#
+# def _multi_chol(G):
+#     chols = np.empty(G.shape)
+#     for i in range(G.shape[0]):
+#         chols[i] = GPy.util.linalg.jitchol(G[i])
+#     return chols
+#
+# def cholesky_dist(X, G):
+#     """
+#     first product cholesky on vector, then take distance
+#     """
+#     chols = _multi_chol(G)
+#     distM = np.einsum('iq,iqp->ip',X,chols)
+#     return np.power(_distance(distance_matrix(distM)), 1./2.)
+#
+# def cholesky_dist_product(X, G):
+#     """first take distance, then product onto cholesky"""
+#     chols = _multi_chol(G)
+#     return np.power(np.abs(_distance_G((distance_matrix(X)), chols)), 1./2.)
 
 def mean_embedding_dist(X, G):
+    """
+    The mean correction, correcting distances using the mean between both
+    manifold metrics to correct for pairwise distances in X.
+    """
     dM = distance_matrix(X)
     mean_geometry = (G[:, None, :, :] + G[None, :, :, :])/2.
     return np.sqrt(np.einsum('ijp,ijpq,ijq->ij', dM, mean_geometry, dM))
