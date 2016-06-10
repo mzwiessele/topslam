@@ -32,7 +32,7 @@ import unittest, numpy as np, GPy
 
 class Test(unittest.TestCase):
     def setUp(self):
-        from topslam.simulation.simulate_trajectory import make_cell_division_times, simulate_latent_space, simulate_new_Y
+        from topslam.simulation.simulate_trajectory import make_cell_division_times, simulate_latent_space, simulate_new_Y_qPCR
         seed = 1234
         n_divisions = 6
         p_dims = 2000
@@ -42,7 +42,7 @@ class Test(unittest.TestCase):
         #c = t
         xvar = .3
         Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
-        Y = simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.3)
+        Y = simulate_new_Y_qPCR(Xsim, t, p_dims, num_classes=48, noise_var=.3)
         
         self.t = t
         self.X = Xsim
