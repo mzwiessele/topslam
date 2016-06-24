@@ -203,9 +203,21 @@ def simulate_latent_space(t, labels, seed=None, var=.2, split_prob=.1, gap=.75):
 
     return Xsim, seed, np.asarray(newlabs), t
 
+from scipy import stats
+
 def simulate_new_Y_RNAseq(Xsim, t, p_dims,
                           num_classes=10,
-                          noise_var=.2):
+                          noise_var=.2, 
+                          dropout_dist=stats.logistic(0, 1), dropout_p=.1):
+    """
+    Simulate an RNAseq experiment. 
+    
+    We model dropouts in RNA count space (E=exp(Y), where Y 
+    is z-score standardized) by a logistic distribution. 
+    You can adjust the distribution by passing in a different dropout
+    probability distribution dropout_dist. A dropout will be modelled by random
+    draws of the dropout distribution being bigger then dropout_p. 
+    """
     n_data = Xsim.shape[0]
     Y = np.empty((n_data, p_dims))
 
@@ -220,7 +232,7 @@ def simulate_new_Y_RNAseq(Xsim, t, p_dims,
                   + GPy.kern.Matern32(2, ARD=True, variance=np.random.uniform(40, 60), lengthscale=np.random.uniform(6,7, size=2)) # mid term
                   + GPy.kern.Matern32(2, ARD=True, variance=np.random.uniform(1, 2), lengthscale=np.random.uniform(1,2, size=2)) # short term
                   #+ GPy.kern.LogisticBasisFuncKernel(2, np.random.uniform(0,10), variance=1, slope=1, active_dims=[1,2])
-                  #+ GPy.kern.White(3,variance=noise_var)
+                  + GPy.kern.White(3,variance=noise_var)
                   )
         Ky_sim = ky_sim.K(np.c_[Xsim, t])
         Y[:, sub] = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, 5).T.dot(np.random.normal(0,1,(5, sub.size)))
@@ -228,9 +240,25 @@ def simulate_new_Y_RNAseq(Xsim, t, p_dims,
     #Y = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, p_dims).T
     Y -= Y.mean(0)
     Y /= Y.std(0)
-    return np.random.normal(Y, np.sqrt(noise_var))
+        
+    # put dropouts in
+    
+    # First exponentiate the data
+    Y = np.exp(Y)
+    Y -= Y.min()
+    
+    #we take it from an exponentially distributed stochastic variable:
+    drop_fil = (dropout_dist.pdf(Y)*np.random.uniform(0,1,Y.shape)) > dropout_p
+    Y[drop_fil] = 0
 
-def simulate_new_Y_qPCR(Xsim, t, p_dims, num_classes=10,noise_var=.2):
+    # go back to normal space and normalize again:
+    Y = np.log1p(Y)
+    #Y -= Y.mean(0)
+    #Y /= Y.std(0)
+    
+    return Y, drop_fil
+
+def simulate_new_Y_qPCR(Xsim, t, p_dims, num_classes=10, noise_var=.2):
     n_data = Xsim.shape[0]
     Y = np.empty((n_data, p_dims))
 
@@ -250,31 +278,33 @@ def simulate_new_Y_qPCR(Xsim, t, p_dims, num_classes=10,noise_var=.2):
         Y[:, sub] = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, 2).T.dot(np.random.normal(0,1,(2, sub.size)))
     #Ky_sim = ky_sim.K(np.c_[Xsim, t])
     #Y = np.random.multivariate_normal(np.zeros(n_data), Ky_sim, p_dims).T
+    # normalize
     Y -= Y.mean(0)
     Y /= Y.std(0)
+    
     return Y
 
-def qpcr_simulation(p_genes=48, n_divisions=6, seed=None):
+def qpcr_simulation(p_genes=48, n_divisions=6, num_classes=48, seed=None, split_prob=.01):
     t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.01, drop_p=.6)
     c = np.log2(labels) / n_divisions
     #c = t
     xvar = .7
-    Xsim, seed, labels, t = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01, gap=1.5)
+    Xsim, seed, labels, t = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=split_prob, gap=1.5)
     def simulate_new():
-        return simulate_new_Y_qPCR(Xsim, t, p_genes, num_classes=48, noise_var=.2)
+        return simulate_new_Y_qPCR(Xsim, t, p_genes, num_classes=num_classes, noise_var=.2)
     return Xsim, simulate_new, t, c, labels, seed
 
 guo_simulation = qpcr_simulation
 
 
-def rnaseq_simulation(p_genes=220, n_divisions=6, seed=None):
+def rnaseq_simulation(p_genes=220, n_divisions=6, num_classes=100, seed=None, split_prob=.01, dropout_dist=stats.logistic(0, 1), dropout_p=.1):
     t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.05, drop_p=.6)
     c = np.log2(labels) / n_divisions
     #c = t
     xvar = 1.
-    Xsim, seed, labels, t = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01, gap=1.)
+    Xsim, seed, labels, t = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=split_prob, gap=1.)
     def simulate_new():
-        return simulate_new_Y_RNAseq(Xsim, t, p_genes, num_classes=100, noise_var=.2)
+        return simulate_new_Y_RNAseq(Xsim, t, p_genes, num_classes=num_classes, noise_var=.2, dropout_dist=dropout_dist, dropout_p=dropout_p)
     return Xsim, simulate_new, t, c, labels, seed
 
 # def guo_simulation_old(p_dims=48, n_divisions=6, seed=None):

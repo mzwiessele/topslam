@@ -395,7 +395,7 @@ class ManifoldCorrection(object):
                                         #patchB=el,
                                         connectionstyle="angle3,angleA=17,angleB=-90"),
                         )
-
+        return ax
 
     def plot_graph_nodes(self, labels=None, ulabels=None, start=0, ax=None, cmap='magma',
                          cmap_index=None, estimate_direction=False, **scatter_kwargs):
@@ -432,6 +432,7 @@ class ManifoldCorrection(object):
                 c, r = colors[l]
                 fil = (labels==l)
                 ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l)
+        return ax
 
     def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma',
                           cmap_index=None, box=True, text_kwargs=None, estimate_direction=False,

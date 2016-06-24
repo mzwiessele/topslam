@@ -28,32 +28,39 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 
-import unittest, numpy as np, GPy
+import unittest, numpy as np
 
 class Test(unittest.TestCase):
-    def setUp(self):
-        from topslam.simulation.simulate_trajectory import make_cell_division_times, simulate_latent_space, simulate_new_Y
-        seed = 1234
-        n_divisions = 6
-        p_dims = 2000
+    def testRNASeq(self):
+        from topslam.simulation.simulate_trajectory import rnaseq_simulation
+
+        p_dims = 30
+        Xsim, simulate_new, t, c, labels, seed = rnaseq_simulation(p_dims, 4, 2, 1234, split_prob=.5)
         
-        t, labels, seed = make_cell_division_times(n_divisions, n_replicates=9, seed=seed, std=.03, drop_p=.6)
-        c = np.log2(labels) / n_divisions
-        #c = t
-        xvar = .3
-        Xsim, seed, labels = simulate_latent_space(t, labels, var=xvar, seed=seed, split_prob=.01)
-        Y = simulate_new_Y(Xsim, t, p_dims, num_classes=48, noise_var=.3)
-        
-        self.t = t
-        self.X = Xsim
         np.random.seed(42)
-        self.Y = Y
+        Y, d = simulate_new()
         
+        from topslam.filtering import filter_RNASeq
+        import pandas as pd
+        
+        E = filter_RNASeq(pd.DataFrame(np.exp(Y)))        
+        np.testing.assert_array_less(-E.values, 0)
+        
+        E = filter_RNASeq(pd.DataFrame(np.exp(Y)), transform_log1p=False)
+        np.testing.assert_allclose(-Y[d].mean(), 0)
+        np.testing.assert_array_less((E.values==0).sum(), (Y==0).sum())
         
 
-    def testName(self):
-        pass
+    def testqPCRSeq(self):
+        from topslam.simulation.simulate_trajectory import qpcr_simulation
 
+        p_dims = 30
+        Xsim, simulate_new, t, c, labels, seed = qpcr_simulation(p_dims, 4, 2, 1234, split_prob=.5)
+        
+        np.random.seed(42)
+        Y = simulate_new()
+        np.testing.assert_array_almost_equal(Y.mean(0), 0)
+        np.testing.assert_array_almost_equal(Y.std(0), 1)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
