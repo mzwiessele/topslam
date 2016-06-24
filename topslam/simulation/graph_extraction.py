@@ -41,7 +41,7 @@ def extract_manifold_distances_knn(D, knn=[3,4,5,7,10], add_mst=None):
     r = range(D.shape[0])
     for k in knn:
         idx = idxs[:, :k]
-        _distances = sparse.lil_matrix(D.shape)
+        _distances = sparse.csc_matrix(D.shape)
         for neighbours in idx.T:
             _distances[r, neighbours] = D[r, neighbours]
         if add_mst is not None:
@@ -57,7 +57,7 @@ def extract_distance_graph(manifold_distance, graph, start):
     This is mainly for plotting purposes in order to plot the graph,
     and distances along it.
     """
-    pt_graph = lil_matrix(graph.shape)
+    pt_graph = sparse.csc_matrix(graph.shape)
     D = manifold_distance
 
     start = 6
