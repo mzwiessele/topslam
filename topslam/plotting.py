@@ -223,6 +223,7 @@ def plot_comparison(mc, X_init, dims, labels, ulabels, start,
         X = X_init[:,dims[name]]
         plot_landscape_other(X, pt, labels=labels, ulabels=ulabels, ax=ax, **graph_node_kwargs)
         plot_labels_other(X, pt, labels, ulabels, ax, **graph_label_kwargs)
+        ax.text(0.01,.98,name,va='top',transform=ax.transAxes,color='b')
         i += 2
 
 
