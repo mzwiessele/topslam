@@ -423,7 +423,7 @@ class ManifoldCorrection(object):
         pt = self.get_pseudo_time(start, estimate_direction)
 
         if len(ulabels) <= 1:
-            ax.scatter(*X.T, linewidth=.1, c=pt, alpha=.8, edgecolor='w', marker=next(marker), label=None, cmap=cmap)
+            ax.scatter(*X.T, linewidth=.1, c=pt, alpha=.8, edgecolor='w', marker=next(marker), label=None, cmap=cmap, **scatter_kwargs)
         else:
             _, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
             colors = _get_colors(cmap, col, mi, ma, cmap_index)
@@ -431,7 +431,7 @@ class ManifoldCorrection(object):
                 #c = Tango.nextMedium()
                 c, r = colors[l]
                 fil = (labels==l)
-                ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l)
+                ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l, **scatter_kwargs)
         return ax
 
     def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma',
@@ -439,7 +439,7 @@ class ManifoldCorrection(object):
                           adjust=True, adjust_kwargs=dict(arrowprops=dict(arrowstyle="fancy",
                                                                           fc=".6", ec="none"),
                                                           force_text=.5, precision=.5),
-                          **scatter_kwargs):
+                          ):
         #Tango = GPy.plotting.Tango
         #Tango.reset()
 
