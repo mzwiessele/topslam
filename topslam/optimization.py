@@ -86,7 +86,14 @@ def optimize_model(m):
     m.update_model(False)
     m.likelihood[:] = m.Y.values.var()/10.
     m.X.variance[:] = .1
-    m.kern.lengthscale.fix()
+
+    try:
+        m.kern.lengthscale.fix()
+    except AttributeError:
+        try:
+            m.kern.variances.fix()
+        except:
+            raise
     m.likelihood.fix()
     m.update_model(True)
     m.optimize(max_iters=500, messages=1, clear_after_finish=True)
@@ -94,7 +101,7 @@ def optimize_model(m):
     m.likelihood.unfix()
     m.optimize(max_iters=500, messages=1, clear_after_finish=True)
 
-    m.kern.lengthscale.unfix()
+    m.kern.unfix()
     m.optimize(max_iters=1e5, messages=1)
     return m
 
