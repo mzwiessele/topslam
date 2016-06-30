@@ -30,7 +30,7 @@
 
 import numpy as np
 
-def filter_RNASeq(E, transform_log1p=True, zero_cutoff=.1, variance_percentile=90):
+def filter_RNASeq(E, transform_log1p=True, zero_cutoff=.1, std_percentile=90):
     """
     Prefilter a pandas DataFrame E [#cells x #genes] of an RNAseq experiment.
 
@@ -44,7 +44,9 @@ def filter_RNASeq(E, transform_log1p=True, zero_cutoff=.1, variance_percentile=9
     This is (empirically in our experience) the optimal way (we found) of using a
     selected subset of genes in order to learn a BayesianGPLVM for it.
 
-    transform_log1p decides whether to transform the data after filtering (Y = log(E+1))
+    :param bool transform_log1p: transform_log1p decides whether to transform the data after filtering (Y = log(E+1)).
+    :param [0-1] zero_cutoff: fraction of zeros per gene to filter. 0 means filter all genes out, 1 mins keep all genes.
+    :param [0-100] std_percentile: percentile of standard deviation for genes to keep at least. 0 means keep all genes, 100 means filter them all.
 
     returns the filtered DataFrame Y
     """
@@ -61,10 +63,10 @@ def filter_RNASeq(E, transform_log1p=True, zero_cutoff=.1, variance_percentile=9
     Y = Y.ix[:, fil]
 
     # omit genes with too low variance
-    var = Y.var(0)
-    var[np.isnan(var)] = 0
-    perc = np.percentile(var.values.flat, variance_percentile)
-    fil = (var>perc).values
+    std = Y.std(0, ddof=1)
+    std[np.isnan(std)] = 0
+    perc = np.percentile(std.values.flat, std_percentile)
+    fil = (std>perc).values
     Y = Y.loc[:, fil]
 
     # Drop any missing values for ease of use
