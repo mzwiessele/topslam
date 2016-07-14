@@ -29,3 +29,4 @@
 #===============================================================================
 
 from . import simulate_trajectory
+from .simulate_trajectory import qpcr_simulation, rnaseq_simulation

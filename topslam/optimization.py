@@ -30,7 +30,6 @@
 
 from sklearn.manifold import TSNE, SpectralEmbedding, Isomap
 from sklearn.decomposition import FastICA, PCA
-from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
 import numpy as np
 
 methods = {'t-SNE':TSNE(n_components=2, perplexity=50, learning_rate=750, n_iter=2000, init='pca'),
@@ -85,15 +84,20 @@ def optimize_model(m):
     """
     m.update_model(False)
     m.likelihood[:] = m.Y.values.var()/10.
-    m.X.variance[:] = .1
+    try:
+        m.X.variance[:] = .1
+    except: #normal GPLVM
+        pass
 
     try:
-        m.kern.lengthscale.fix()
+        m.kern['.*lengthscale'].fix()
     except AttributeError:
-        try:
-            m.kern.variances.fix()
-        except:
-            raise
+        pass
+    try:
+        m.kern['.*variances'].fix(m.Y.values.var()/100.)
+    except:
+        pass
+
     m.likelihood.fix()
     m.update_model(True)
     m.optimize(max_iters=500, messages=1, clear_after_finish=True)
@@ -105,7 +109,7 @@ def optimize_model(m):
     m.optimize(max_iters=1e5, messages=1)
     return m
 
-def create_model(Y, X_init, num_inducing=25):
+def create_model(Y, X_init=None, num_inducing=10, nonlinear_dims=5, linear_dims=0):
     """
     Create a BayesianGPLVM model for the expression values in Y.
 
@@ -118,11 +122,36 @@ def create_model(Y, X_init, num_inducing=25):
 
     num_inducing are the number of inducing inputs. It is a number `M`
     between the `0` and the number of datapoints you have and controls
-    the complexity of your model. We usually use between 25 and 50
+    the complexity of your model. We usually use 10 to 20
     inducing inputs, but if you are having trouble with accuracy in
     your found landscape, you can try to up this number. Note, that
     the speed of the method goes down, with higher numbers of
-    inducing inputs.
+    inducing inputs. Also, if you use RNASeq data, it is recommended to use a
+    lower number (i.e. 10) of inducing inputs so the BayesianGPLVM is
+    forced to generalise over patterns and cannot explain the zeros in the
+    data by inducing inputs.
+
+    nonlinear_dims are the number of latent dimensions modelled as nonlinear
+    relationship between latent space and observed gene expression values
+    along the samples. This value gets ignored if X_init is given and the number
+    of nonlinear_dims will be the number of dimensions in X_init. If X_init is
+    not given, it will be created by PCA.
+
+    linear_dims are the linear dimensions to add into the latent space.
+    Linear dimensions are used for modelling linear relationships in the latent
+    space independently from the non-linear ones. That is, the last linear_dims
+    dimensions in the latent space will be modelled by a linear kernel. We
+    recommend try to first run without linear dimensions and see what the
+    BayesianGPLVM can learn. If there is a considered amount of confounding
+    variation, the linear dimension can help to find this variation
+    and explain it away from the rest. It can also lead to unexpected results...
+
+    Missing Data: If you have missing data, you can assign the values in Y,
+    which are missing to np.nan and the BayesianGPLVM will assume missing
+    data at random over those. This will include the dimensionality in
+    the runtime of the method and will slow down progress significantly. Thus,
+    only include missing data into the model, if you are certain you want to
+    use it.
 
     Usage example:
 
@@ -130,13 +159,42 @@ def create_model(Y, X_init, num_inducing=25):
         Y -= Y.mean(0) # Normalization of data, zero mean is usually what you want.
         Y /= Y.std(0) # Beware of your data and decide whether you want to normalize the variances!
         X_init, dims = run_methods(Y, methods)
-        m = create_model(Y, X_init, num_inducing=30)
+        m = create_model(Y, X_init, num_inducing=10)
         optimize_model(m)
 
     returns a BayesianGPLVM model for the given data matrix Y.
     """
+    from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
+    from GPy.kern import Linear, RBF, Add
+    from GPy.util.linalg import pca
+
     try:
-        Y = Y.values
+        Y = Y.values.copy()
     except:
-        pass
-    return BayesianGPLVMMiniBatch(Y, X_init.shape[1], X=X_init, num_inducing=num_inducing, missing_data=np.any(np.isnan(Y)))
+        Y = np.asarray(Y, float).copy()
+
+    if X_init is None:
+        X_init = pca(Y, nonlinear_dims)[0]
+
+    if linear_dims > 0:
+        Qlin = linear_dims
+        Q = X_init.shape[1] + Qlin
+        #Q = 5
+        m = BayesianGPLVMMiniBatch(Y, Q, X=np.c_[X_init, pca(Y,Qlin)[0]],
+                                     kernel=Add([
+                    RBF(Q-Qlin, ARD=True, active_dims=np.arange(0,X_init.shape[1])),
+                    Linear(Qlin, ARD=True, active_dims=np.arange(X_init.shape[1], Q))
+                ]),
+                                     num_inducing=num_inducing,
+                                     missing_data=np.any(np.isnan(Y))
+                                    )
+    else:
+        Q = X_init.shape[1]
+        #Q = 5
+        m = BayesianGPLVMMiniBatch(Y, Q, X=X_init,
+                    kernel=RBF(Q, ARD=True, active_dims=np.arange(0,X_init.shape[1])),
+                    num_inducing=num_inducing,
+                    missing_data=np.any(np.isnan(Y))
+                    )
+
+    return m

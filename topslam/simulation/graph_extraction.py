@@ -2,7 +2,6 @@
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import minimum_spanning_tree, dijkstra
-from scipy.sparse.lil import lil_matrix
 from scipy.sparse.extract import find
 
 # def nearest_neighbor_graph(D, k):
@@ -27,7 +26,7 @@ def extract_manifold_distances_mst(D):
 
 def extract_manifold_distances_knn(D, knn=[3,4,5,7,10], add_mst=None):
     '''
-    Return the distances along a k nearest neighbour graphh for the given
+    Return the distances along a k nearest neighbour graph for the given
     distances D (Using dijkstra). It also returns the knn graph itself.
     This is a generator function and will return an iterator for each k given in knn.
 

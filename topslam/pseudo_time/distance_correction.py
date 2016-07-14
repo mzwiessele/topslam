@@ -331,7 +331,7 @@ class ManifoldCorrection(object):
         else:
             fig = ax.figure
 
-        (Xgrid, wadXgrid, X, wadX) = waddington_landscape(self.gplvm, resolution, xmargin, ymargin)
+        (Xgrid, wadXgrid, X, wadX) = waddington_landscape(self.gplvm, self.dimensions[:2], resolution, xmargin, ymargin)
         r = lambda x: x.reshape(resolution, resolution).T
         CS = ax.contourf(r(Xgrid[:,0]), r(Xgrid[:,1]), r(wadXgrid), cmap=cmap)
         mi, ma = Xgrid.min(0), Xgrid.max(0)

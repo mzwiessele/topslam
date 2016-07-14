@@ -7,7 +7,7 @@ def transform_to_wad(X, mu, std, steepness=2):
     test_wad_trace /= std/steepness
     return (expit(test_wad_trace)-.5)
 
-def waddington_landscape(m, resolution=60, xmargin=(.075, .075), ymargin=(.075, .075)):
+def waddington_landscape(m, dimensions=None, resolution=60, xmargin=(.075, .075), ymargin=(.075, .075)):
     """
     Extract Waddington's landscape from a (Bayesian-)GPLVM model `m`.
     The landscape surface is extracted using a grid in the inputs with
@@ -17,7 +17,11 @@ def waddington_landscape(m, resolution=60, xmargin=(.075, .075), ymargin=(.075, 
         - Xgrid is the grid made for predicting the surface wadXgrid.
         - X is the used dimensions of the input of the (B)GPLVMs surface wadX at those points.
     """
-    msi = m.get_most_significant_input_dimensions()[:2]
+    if dimensions is None:
+        msi = m.get_most_significant_input_dimensions()[:2]
+    else:
+        msi = dimensions[:2]
+
     X = m.X.mean.values.copy()
     X[:, np.setdiff1d(range(X.shape[1]), msi)] = 0.
 
