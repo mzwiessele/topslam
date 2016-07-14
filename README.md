@@ -27,9 +27,45 @@ Extracting and using probabilistic Waddington's landscape recreation from single
 
 ## Installation
 
+### Using pip
+
 *Not yet uploaded, publication pending*
 
 `$ pip install topslam`
+
+### From source, developmental versions
+
+You can install GPy in the developmental version, as well as topslam. Recommended is anaconda python.
+
+https://www.continuum.io/downloads
+
+and install numpy, scipy, matplotlib, pandas etc directly through anaconda ($ conda install numpy scipy matplotlib pandas <etc..>)
+
+#### GPy:
+
+```
+$ git checkout git@github.com:SheffieldML/GPy.git
+$ cd GPy
+$ python setup.py develop
+```
+
+#### topslam:
+
+```
+$ git checkout git@github.com:mzwiessele/topslam.git
+$ cd topslam
+$ python setup.py develop
+```
+
+This should install all necessary packages, even if you did not install them through anaconda (be careful, numpy ans scipy will try to build if you do not use anaconda for it).
+
+#### pull updates:
+
+In the topslam directory you just pull in changes using:
+
+`$ git pull`
+
+This should update it, unless you have made changes.
 
 ## Data filtering and usage
 
@@ -59,10 +95,6 @@ Remarks for an optimized model for standard normalized data (zero mean and unit 
   - plot_latent does not show Waddington's landscape (as grayscale), but the certainty of the model.
   - plot_magnification shows a representation of Waddington's landscape (as grayscale), although we use a transformation of that to show valleys more finegrained.
 
-## Example Application
+## Example Applications:
 
-```python
-
-
-
-```
+See https://github.com/mzwiessele/topslam/tree/master/notebooks and check for updates, as there will be more notebooks added.
