@@ -94,7 +94,7 @@ def optimize_model(m):
     except AttributeError:
         pass
     try:
-        m.kern['.*variances'].fix(m.Y.values.var()/100.)
+        m.kern['.*variances'].fix(m.Y.values.var()/1e5)
     except:
         pass
 
