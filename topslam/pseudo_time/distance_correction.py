@@ -368,7 +368,7 @@ class ManifoldCorrection(object):
         else:
             fig = ax.figure
         import networkx as nx
-        X = self.X#self.Xgplvm[:, self.gplvm.get_most_significant_input_dimensions()[:2]]
+        X = self.X[:, :2]#self.Xgplvm[:, self.gplvm.get_most_significant_input_dimensions()[:2]]
         G = nx.Graph(self.get_time_graph(start, estimate_direction=estimate_direction))
         ecols = [e[2]['weight'] for e in G.edges(data=True)]
         cmap = plt.get_cmap(cmap)
@@ -419,7 +419,7 @@ class ManifoldCorrection(object):
         else:
             fig = ax.figure
 
-        X = self.X#self.Xgplvm[:, self.gplvm.get_most_significant_input_dimensions()[:2]]
+        X = self.X[:, :2]#self.Xgplvm[:, self.gplvm.get_most_significant_input_dimensions()[:2]]
         pt = self.get_pseudo_time(start, estimate_direction)
 
         if len(ulabels) <= 1:
