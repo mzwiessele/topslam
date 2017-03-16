@@ -36,7 +36,7 @@ def make_cell_division_times(n_divisions, n_replicates=8, std=.1, seed=None, dro
     # such that biological variation is captured better
     t = []
     for mu, st, size in zip(np.exp(np.linspace(0,np.log(maxtime),n_data)[class_centers]), class_vars, class_sizes):
-        stage = size/n_replicates
+        stage = int(size/n_replicates)
         offset = (2*st)#/float(stage)
         # make cell centers for each cell stage:
         # cell_centers = np.random.normal(mu, var/2., stage)
