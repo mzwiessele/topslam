@@ -109,7 +109,7 @@ def optimize_model(m):
     m.optimize(max_iters=1e5, messages=1)
     return m
 
-def create_model(Y, X_init=None, num_inducing=10, nonlinear_dims=5, linear_dims=0):
+def create_model(Y, X_init=None, num_inducing=10, nonlinear_dims=5, linear_dims=0, white_variance=1):
     """
     Create a BayesianGPLVM model for the expression values in Y.
 
@@ -146,6 +146,9 @@ def create_model(Y, X_init=None, num_inducing=10, nonlinear_dims=5, linear_dims=
     variation, the linear dimension can help to find this variation
     and explain it away from the rest. It can also lead to unexpected results...
 
+    white_variance is a white variance value (float) for a white variance on the 
+    kernel. If it is None, no white variance kernel will be added to the analysis.
+
     Missing Data: If you have missing data, you can assign the values in Y,
     which are missing to np.nan and the BayesianGPLVM will assume missing
     data at random over those. This will include the dimensionality in
@@ -165,7 +168,7 @@ def create_model(Y, X_init=None, num_inducing=10, nonlinear_dims=5, linear_dims=
     returns a BayesianGPLVM model for the given data matrix Y.
     """
     from GPy.models.bayesian_gplvm_minibatch import BayesianGPLVMMiniBatch
-    from GPy.kern import Linear, RBF, Add
+    from GPy.kern import Linear, RBF, Add, White
     from GPy.util.linalg import pca
 
     try:
@@ -176,23 +179,29 @@ def create_model(Y, X_init=None, num_inducing=10, nonlinear_dims=5, linear_dims=
     if X_init is None:
         X_init = pca(Y, nonlinear_dims)[0]
 
+    kernels = []
+
     if linear_dims > 0:
         Qlin = linear_dims
         Q = X_init.shape[1] + Qlin
-        #Q = 5
-        m = BayesianGPLVMMiniBatch(Y, Q, X=np.c_[X_init, pca(Y,Qlin)[0]],
-                                     kernel=Add([
-                    RBF(Q-Qlin, ARD=True, active_dims=np.arange(0,X_init.shape[1])),
-                    Linear(Qlin, ARD=True, active_dims=np.arange(X_init.shape[1], Q))
-                ]),
-                                     num_inducing=num_inducing,
-                                     missing_data=np.any(np.isnan(Y))
-                                    )
+        kernels.extend([
+            RBF(Q-Qlin, ARD=True, active_dims=np.arange(0,X_init.shape[1])),
+            Linear(Qlin, ARD=True, active_dims=np.arange(X_init.shape[1], Q))
+        ])
     else:
         Q = X_init.shape[1]
-        #Q = 5
-        m = BayesianGPLVMMiniBatch(Y, Q, X=X_init,
-                    kernel=RBF(Q, ARD=True, active_dims=np.arange(0,X_init.shape[1])),
+        kernels.append(RBF(Q, ARD=True, active_dims=np.arange(0,X_init.shape[1])))
+
+    if white_variance is not None:
+        kernels.append(White(Q, variance=white_variance))
+    
+    if len(kernels) > 1:
+        kernel = Add(kernels)
+    else:
+        kernel = kernels[0]
+    
+    m = BayesianGPLVMMiniBatch(Y, Q, X=X_init,
+                    kernel=kernel,
                     num_inducing=num_inducing,
                     missing_data=np.any(np.isnan(Y))
                     )
