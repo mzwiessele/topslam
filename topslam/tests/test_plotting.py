@@ -156,17 +156,20 @@ def test_topslam():
         from topslam import ManifoldCorrectionKNN
         mc = ManifoldCorrectionKNN(m, 10)
 
-        ax = mc.plot_waddington_landscape()
+        fig, ax = plt.subplots()
+        mc.plot_waddington_landscape(ax=ax)
         mc.plot_graph_nodes(ax=ax)
 
         mc.plot_time_graph()
 
         mc.plot_time_graph(labels)
 
-        ax = mc.plot_graph_nodes(labels)
+        fig, ax = plt.subplots()
+        mc.plot_graph_nodes(labels, ax=ax)
         mc.plot_graph_labels(labels, ax=ax, adjust=False, box=False)
 
-        ax = mc.plot_graph_nodes()
+        fig, ax = plt.subplots()
+        mc.plot_graph_nodes(ax=ax)
         mc.plot_graph_labels(labels, ax=ax, adjust=True, box=True)
 
     for do_test in _image_comparison(baseline_images=['topslam_{}'.format(sub) for sub in ["waddington_nodes",
@@ -220,7 +223,8 @@ def test_other():
         plot_dist_hist(test_data['Y'])
         
         X, pt = X_init[:, dims['t-SNE']], test_data['t']
-        ax = plot_landscape_other(X, pt, labels)
+        fig, ax = plt.subplots()
+        plot_landscape_other(X, pt, labels, ax=ax)
         plot_labels_other(X, pt, labels, ax=ax)
 
     for do_test in _image_comparison(baseline_images=['other_{}'.format(sub) for sub in ["comparison",
