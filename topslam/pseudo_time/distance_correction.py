@@ -340,8 +340,8 @@ class ManifoldCorrection(object):
 
         return ax
 
-    def plot_time_graph(self, labels=None, ulabels=None, start=0, startoffset=(10,5), ax=None, estimate_direction=False, cmap='magma'):
-
+    def plot_time_graph(self, labels=None, ulabels=None, start=0, startoffset=(10,5), ax=None, estimate_direction=False, cmap='magma', colorbar=True):
+        ret_dict = {}
         if ulabels is None and labels is not None:
             ulabels = []
             for l in labels:
@@ -354,15 +354,15 @@ class ManifoldCorrection(object):
         else:
             fig = ax.figure
 
-        self.plot_graph_nodes(labels, ulabels, start, ax, cmap=cmap, estimate_direction=estimate_direction)
+        ret_dict.update(self.plot_graph_nodes(labels, ulabels, start, ax, cmap=cmap, estimate_direction=estimate_direction))
         if labels is not None:
-            self.plot_graph_labels(labels, ulabels=ulabels, start=start, ax=ax, estimate_direction=estimate_direction, cmap=cmap)
-        self.plot_time_graph_edges(start, startoffset, ax, estimate_direction=estimate_direction, cmap=cmap)
+            ret_dict.update(self.plot_graph_labels(labels, ulabels=ulabels, start=start, ax=ax, estimate_direction=estimate_direction, cmap=cmap))
+        ret_dict.update(self.plot_time_graph_edges(start, startoffset, ax, estimate_direction=estimate_direction, cmap=cmap, colorbar=colorbar))
         #ax.legend(bbox_to_anchor=(0., 1.02, 1.2, .102), loc=3,
         #           ncol=4, mode="expand", borderaxespad=0.)
-        return ax
+        return ret_dict
 
-    def plot_time_graph_edges(self, start=0, startoffset=(10,5), ax=None, estimate_direction=False, cmap='magma'):
+    def plot_time_graph_edges(self, start=0, startoffset=(10,5), ax=None, estimate_direction=False, cmap='magma', colorbar=True):
         if ax is None:
             fig, ax = plt.subplots()
         else:
@@ -374,18 +374,19 @@ class ManifoldCorrection(object):
         cmap = plt.get_cmap(cmap)
         pos = dict([(i, x) for i, x in zip(range(X.shape[0]), X)])
         edges = nx.draw_networkx_edges(G, pos=pos, ax=ax, edge_color=ecols, edge_cmap=cmap, width=1)
-
-        cbar = fig.colorbar(edges, ax=ax, pad=.01, fraction=.1, ticks=[], drawedges=False)
-        cbar.ax.set_frame_on(False)
-        cbar.solids.set_edgecolor("face")
-        cbar.set_label('pseudo time')
+        
+        if colorbar:
+            cbar = fig.colorbar(edges, ax=ax, pad=.01, fraction=.1, ticks=[], drawedges=False)
+            cbar.ax.set_frame_on(False)
+            cbar.solids.set_edgecolor("face")
+            cbar.set_label('pseudo time')
 
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_frame_on(False)
 
         #ax.scatter(*X[start].T, edgecolor='red', lw=1.5, facecolor='none', s=50, label='start')
-        ax.annotate('start', xy=X[start].T, xycoords='data',
+        start_annotation = ax.annotate('start', xy=X[start].T, xycoords='data',
                         xytext=startoffset, textcoords='offset points',
                         size=9,
                         color='.4',
@@ -395,7 +396,7 @@ class ManifoldCorrection(object):
                                         #patchB=el,
                                         connectionstyle="angle3,angleA=17,angleB=-90"),
                         )
-        return ax
+        return dict(edges=edges, start_annotation=start_annotation)
 
     def plot_graph_nodes(self, labels=None, ulabels=None, start=0, ax=None, cmap='magma',
                          cmap_index=None, estimate_direction=False, **scatter_kwargs):
@@ -421,9 +422,9 @@ class ManifoldCorrection(object):
 
         X = self.X[:, :2]#self.Xgplvm[:, self.gplvm.get_most_significant_input_dimensions()[:2]]
         pt = self.get_pseudo_time(start, estimate_direction)
-
+        ret_dict = {}
         if len(ulabels) <= 1:
-            ax.scatter(*X.T, linewidth=.1, c=pt, alpha=.8, edgecolor='w', marker=next(marker), label=None, cmap=cmap, **scatter_kwargs)
+            ret_dict['scatter'] = ax.scatter(*X.T, linewidth=.1, c=pt, alpha=.8, edgecolor='w', marker=next(marker), label=None, cmap=cmap, **scatter_kwargs)
         else:
             _, col, mi, ma = _get_label_pos(X, pt, labels, ulabels)
             colors = _get_colors(cmap, col, mi, ma, cmap_index)
@@ -431,8 +432,8 @@ class ManifoldCorrection(object):
                 #c = Tango.nextMedium()
                 c, r = colors[l]
                 fil = (labels==l)
-                ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l, **scatter_kwargs)
-        return ax
+                ret_dict['scatter {}'.format(l)] = ax.scatter(*X[fil].T, linewidth=.1, facecolor=c, alpha=.8, edgecolor='w', marker=next(marker), label=l, **scatter_kwargs)
+        return ret_dict
 
     def plot_graph_labels(self, labels, ulabels=None, start=0, ax=None, cmap='magma',
                           cmap_index=None, box=True, text_kwargs=None, estimate_direction=False,
@@ -487,7 +488,7 @@ class ManifoldCorrection(object):
                 adjust_text(texts, x, y, ax=ax, **adjust_kwargs)
             except ImportError:
                 print("Could not find adjustText package, resuming without adjusting")
-        return ax
+        return dict(label_texts=texts)
 
 
 def _get_colors(cmap, col, mi, ma, cmap_index):
