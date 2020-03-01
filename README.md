@@ -57,7 +57,7 @@ $ cd topslam
 $ python setup.py develop
 ```
 
-This should install all necessary packages, even if you did not install them through anaconda (be careful, numpy ans scipy will try to build if you do not use anaconda for it).
+This should install all necessary packages, even if you did not install them through anaconda (be careful, numpy and scipy will try to build if you do not use anaconda for it).
 
 #### pull updates:
 
